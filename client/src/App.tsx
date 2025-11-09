@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 // import CreateStore from "./pages/CreateStore";
 import SetupPage from "./pages/SetupPage";
+import Placeholder from "./pages/Placeholder"; // Import placeholder
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/create-store" element={<SetupPage />} />
+      <Route path="/feature/:menuName" element={<Placeholder />} />
     </Routes>
   );
 }
