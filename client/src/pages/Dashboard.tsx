@@ -2,8 +2,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import MainLayout from "../components/MainLayout"; // Import layout yang baru kita buat
 
-// Tipe data
+// Definisi tipe data
 interface Store {
   display_name: string;
 }
@@ -24,6 +25,7 @@ const Dashboard: React.FC = () => {
       const token = localStorage.getItem("token");
       const userStr = localStorage.getItem("user");
 
+      // Jika tidak ada token atau data user, lempar ke halaman login
       if (!token || !userStr) {
         navigate("/login");
         return;
@@ -32,6 +34,7 @@ const Dashboard: React.FC = () => {
       setUser(JSON.parse(userStr));
 
       try {
+        // Ambil data toko dari backend
         const response = await axios.get(
           "http://localhost:5000/api/store/my-store",
           {
@@ -40,388 +43,214 @@ const Dashboard: React.FC = () => {
         );
         setStore(response.data);
       } catch (err: any) {
+        // Jika error 404 (belum punya toko), arahkan ke halaman setup toko
         if (err.response && err.response.status === 404) {
           navigate("/create-store");
+        } else {
+          console.error("Error fetching store data:", err);
         }
       } finally {
         setLoading(false);
       }
     };
+
     fetchData();
   }, [navigate]);
 
-  // --- HANDLERS ---
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
+  // Fungsi navigasi untuk menu grid
+  const goTo = (menuPath: string) => {
+    navigate(menuPath);
   };
 
-  // Fungsi navigasi ke placeholder
-  const goTo = (menuName: string) => {
-    navigate(`/feature/${menuName}`);
-  };
-
-  if (loading)
+  if (loading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
-        Memuat...
+      <div style={{ padding: "20px", textAlign: "center" }}>
+        Memuat dashboard...
       </div>
     );
+  }
 
-  // --- STYLES (Inline CSS) ---
-  const layoutStyle: React.CSSProperties = {
-    display: "flex",
-    height: "100vh",
-    width: "100vw",
-    overflow: "hidden",
-    fontFamily: "sans-serif",
-  };
-
-  // SIDEBAR STYLE
-  const sidebarStyle: React.CSSProperties = {
-    width: "250px",
-    backgroundColor: "#050542", // Biru dongker gelap sesuai gambar
-    color: "white",
-    display: "flex",
-    flexDirection: "column",
-    flexShrink: 0,
-  };
-
-  const logoAreaStyle: React.CSSProperties = {
-    height: "150px",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
-    borderBottom: "1px solid rgba(255,255,255,0.1)",
-  };
-
-  const sidebarMenuStyle: React.CSSProperties = {
-    listStyle: "none",
-    padding: 0,
-    margin: "20px 0",
-    flexGrow: 1,
-  };
-
-  const sidebarItemStyle: React.CSSProperties = {
-    padding: "15px 25px",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    fontSize: "18px",
-    fontWeight: "500",
-    transition: "0.3s",
-    color: "white",
-    textDecoration: "none",
-  };
-
-  // MAIN CONTENT STYLE
-  const mainContentStyle: React.CSSProperties = {
-    flexGrow: 1,
-    display: "flex",
-    flexDirection: "column",
-    backgroundColor: "white",
-    overflowY: "auto",
-  };
-
-  // HEADER STYLE
-  const headerStyle: React.CSSProperties = {
-    height: "60px",
-    backgroundColor: "#0088cc", // Biru muda di bagian atas sesuai gambar
-    display: "flex",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    padding: "0 30px",
-    color: "white",
-    fontSize: "24px",
-  };
-
-  const headerIconStyle: React.CSSProperties = {
-    marginLeft: "25px",
-    cursor: "pointer",
-  };
-
-  // DASHBOARD CONTENT STYLE
-  const dashboardBodyStyle: React.CSSProperties = {
-    padding: "30px 40px",
-  };
-
+  // --- STYLES KHUSUS DASHBOARD ---
   const gridContainerStyle: React.CSSProperties = {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", // Responsif
-    gap: "30px",
-    marginTop: "40px",
+    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", // Grid responsif
+    gap: "25px",
+    marginTop: "30px",
   };
 
   const cardStyle: React.CSSProperties = {
     backgroundColor: "white",
-    border: "2px solid #eee",
-    borderRadius: "15px",
+    borderRadius: "12px",
     padding: "30px 20px",
     textAlign: "center",
     cursor: "pointer",
-    transition: "transform 0.2s, box-shadow 0.2s, border-color 0.2s",
+    boxShadow: "0 4px 15px rgba(0,0,0,0.05)",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: "180px",
+    minHeight: "160px",
+    border: "1px solid #f0f0f0",
+    transition: "transform 0.2s, box-shadow 0.2s",
   };
 
-  // --- RENDER ---
+  // --- RENDER DASHBOARD DENGAN LAYOUT ---
   return (
-    <div style={layoutStyle}>
-      {/* === LEFT SIDEBAR === */}
-      <aside style={sidebarStyle}>
-        <div style={logoAreaStyle}>
-          {/* Placeholder Logo Bulat */}
+    <MainLayout>
+      <div style={{ padding: "10px 20px" }}>
+        {/* Sapaan User dan Nama Toko */}
+        <h2
+          style={{
+            fontSize: "22px",
+            color: "#333",
+            marginBottom: "5px",
+            fontWeight: "normal",
+          }}
+        >
+          Selamat datang..{" "}
+          <span style={{ color: "#999" }}>{user?.username || "User"}</span>
+        </h2>
+        <h1
+          style={{
+            fontSize: "32px",
+            color: "#050542",
+            marginTop: 0,
+            fontWeight: "bold",
+          }}
+        >
+          {store?.display_name || "Toko Anda"}
+        </h1>
+
+        {/* GRID MENU UTAMA */}
+        <div style={gridContainerStyle}>
+          {/* Kartu 1: Pembayaran */}
           <div
-            style={{
-              width: "60px",
-              height: "60px",
-              backgroundColor: "#0088cc",
-              borderRadius: "50%",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              fontSize: "30px",
+            style={cardStyle}
+            onClick={() => goTo("/feature/pembayaran")}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = "translateY(-5px)";
+              e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.1)";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.05)";
             }}
           >
-            🛒
-          </div>
-          <h2 style={{ marginTop: "10px", fontSize: "22px" }}>KASIRKU</h2>
-        </div>
-
-        <ul style={sidebarMenuStyle}>
-          {/* Menu Sidebar sesuai gambar */}
-          <li style={sidebarItemStyle} onClick={() => goTo("gudang")}>
-            <span style={{ marginRight: "15px", fontSize: "24px" }}>🏭</span>{" "}
-            Gudang
-          </li>
-          <li style={sidebarItemStyle} onClick={() => goTo("karyawan")}>
-            <span style={{ marginRight: "15px", fontSize: "24px" }}>👥</span>{" "}
-            Karyawan
-          </li>
-          <li style={sidebarItemStyle} onClick={() => goTo("restok")}>
-            <span style={{ marginRight: "15px", fontSize: "24px" }}>🔄</span>{" "}
-            Restok
-          </li>
-          <li style={sidebarItemStyle} onClick={() => goTo("kategori")}>
-            <span style={{ marginRight: "15px", fontSize: "24px" }}>🏷️</span>{" "}
-            Kategori
-          </li>
-        </ul>
-
-        {/* Tombol Keluar di bawah sidebar */}
-        <div
-          style={{
-            ...sidebarItemStyle,
-            borderTop: "1px solid rgba(255,255,255,0.1)",
-            marginTop: "auto",
-          }}
-          onClick={handleLogout}
-        >
-          <span style={{ marginRight: "15px", fontSize: "24px" }}>🚪</span>{" "}
-          Keluar
-        </div>
-      </aside>
-
-      {/* === MAIN AREA === */}
-      <main style={mainContentStyle}>
-        {/* HEADER ATAS */}
-        <header style={headerStyle}>
-          {/* Ikon-ikon header placeholder */}
-          <span style={headerIconStyle} title="Home">
-            🏠
-          </span>
-          <span style={headerIconStyle} title="Calendar">
-            📅
-          </span>
-          <span style={headerIconStyle} title="Cart">
-            🛒
-          </span>
-          <span style={headerIconStyle} title="Store">
-            🏪
-          </span>
-        </header>
-
-        {/* BODY DASHBOARD */}
-        <div style={dashboardBodyStyle}>
-          <h1 style={{ fontSize: "28px", color: "#333", marginBottom: "5px" }}>
-            Selamat datang..{" "}
+            <span style={{ fontSize: "50px", marginBottom: "15px" }}>🛒</span>
             <span
-              style={{ color: "#888", fontSize: "24px", fontWeight: "normal" }}
+              style={{ fontSize: "18px", fontWeight: "bold", color: "#555" }}
             >
-              {user?.username || "User"}
+              Pembayaran
             </span>
-          </h1>
-          <h2 style={{ fontSize: "32px", color: "#0a0a5e", marginTop: 0 }}>
-            {store?.display_name || "Nama Toko"}
-          </h2>
+          </div>
 
-          {/* GRID MENU UTAMA */}
-          <div style={gridContainerStyle}>
-            {/* Kartu 1: Pembayaran */}
-            <div
-              style={cardStyle}
-              onClick={() => goTo("pembayaran")}
-              onMouseOver={(e) =>
-                (e.currentTarget.style.borderColor = "#0088cc")
-              }
-              onMouseOut={(e) => (e.currentTarget.style.borderColor = "#eee")}
+          {/* Kartu 2: Penjualan */}
+          <div
+            style={cardStyle}
+            onClick={() => goTo("/feature/penjualan")}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = "translateY(-5px)";
+              e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.1)";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.05)";
+            }}
+          >
+            <span style={{ fontSize: "50px", marginBottom: "15px" }}>🏪</span>
+            <span
+              style={{ fontSize: "18px", fontWeight: "bold", color: "#555" }}
             >
-              <span
-                style={{
-                  fontSize: "60px",
-                  color: "#0088cc",
-                  marginBottom: "15px",
-                }}
-              >
-                🛒
-              </span>
-              <span
-                style={{ fontSize: "20px", fontWeight: "bold", color: "#333" }}
-              >
-                Pembayaran
-              </span>
-            </div>
+              Penjualan
+            </span>
+          </div>
 
-            {/* Kartu 2: Penjualan */}
-            <div
-              style={cardStyle}
-              onClick={() => goTo("penjualan")}
-              onMouseOver={(e) =>
-                (e.currentTarget.style.borderColor = "#0088cc")
-              }
-              onMouseOut={(e) => (e.currentTarget.style.borderColor = "#eee")}
+          {/* Kartu 3: Jurnal */}
+          <div
+            style={cardStyle}
+            onClick={() => goTo("/feature/jurnal")}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = "translateY(-5px)";
+              e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.1)";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.05)";
+            }}
+          >
+            <span style={{ fontSize: "50px", marginBottom: "15px" }}>📖</span>
+            <span
+              style={{ fontSize: "18px", fontWeight: "bold", color: "#555" }}
             >
-              <span
-                style={{
-                  fontSize: "60px",
-                  color: "#0088cc",
-                  marginBottom: "15px",
-                }}
-              >
-                🏪
-              </span>
-              <span
-                style={{ fontSize: "20px", fontWeight: "bold", color: "#333" }}
-              >
-                Penjualan
-              </span>
-            </div>
+              Jurnal
+            </span>
+          </div>
 
-            {/* Kartu 3: Jurnal */}
-            <div
-              style={cardStyle}
-              onClick={() => goTo("jurnal")}
-              onMouseOver={(e) =>
-                (e.currentTarget.style.borderColor = "#0088cc")
-              }
-              onMouseOut={(e) => (e.currentTarget.style.borderColor = "#eee")}
+          {/* Kartu 4: Histori Penjualan */}
+          <div
+            style={cardStyle}
+            onClick={() => goTo("/feature/histori-penjualan")}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = "translateY(-5px)";
+              e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.1)";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.05)";
+            }}
+          >
+            <span style={{ fontSize: "50px", marginBottom: "15px" }}>📅</span>
+            <span
+              style={{ fontSize: "18px", fontWeight: "bold", color: "#555" }}
             >
-              <span
-                style={{
-                  fontSize: "60px",
-                  color: "#0088cc",
-                  marginBottom: "15px",
-                }}
-              >
-                📖
-              </span>
-              <span
-                style={{ fontSize: "20px", fontWeight: "bold", color: "#333" }}
-              >
-                Jurnal
-              </span>
-            </div>
+              Histori penjualan
+            </span>
+          </div>
 
-            {/* Kartu 4: Histori Penjualan */}
-            <div
-              style={cardStyle}
-              onClick={() => goTo("histori-penjualan")}
-              onMouseOver={(e) =>
-                (e.currentTarget.style.borderColor = "#0088cc")
-              }
-              onMouseOut={(e) => (e.currentTarget.style.borderColor = "#eee")}
+          {/* Kartu 5: Produk - Kita arahkan langsung ke Kategori dulu sebagai pusat produk */}
+          <div
+            style={cardStyle}
+            onClick={() => goTo("/kategori")}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = "translateY(-5px)";
+              e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.1)";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.05)";
+            }}
+          >
+            <span style={{ fontSize: "50px", marginBottom: "15px" }}>📦</span>
+            <span
+              style={{ fontSize: "18px", fontWeight: "bold", color: "#555" }}
             >
-              <span
-                style={{
-                  fontSize: "60px",
-                  color: "#0088cc",
-                  marginBottom: "15px",
-                }}
-              >
-                📅
-              </span>
-              <span
-                style={{ fontSize: "20px", fontWeight: "bold", color: "#333" }}
-              >
-                Histori penjualan
-              </span>
-            </div>
+              Produk
+            </span>
+          </div>
 
-            {/* Kartu 5: Produk */}
-            <div
-              style={cardStyle}
-              onClick={() => goTo("produk")}
-              onMouseOver={(e) =>
-                (e.currentTarget.style.borderColor = "#0088cc")
-              }
-              onMouseOut={(e) => (e.currentTarget.style.borderColor = "#eee")}
+          {/* Kartu 6: Grafik */}
+          <div
+            style={cardStyle}
+            onClick={() => goTo("/feature/grafik")}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = "translateY(-5px)";
+              e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.1)";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.05)";
+            }}
+          >
+            <span style={{ fontSize: "50px", marginBottom: "15px" }}>📈</span>
+            <span
+              style={{ fontSize: "18px", fontWeight: "bold", color: "#555" }}
             >
-              <span
-                style={{
-                  fontSize: "60px",
-                  color: "#0088cc",
-                  marginBottom: "15px",
-                }}
-              >
-                📦
-              </span>
-              <span
-                style={{ fontSize: "20px", fontWeight: "bold", color: "#333" }}
-              >
-                Produk
-              </span>
-            </div>
-
-            {/* Kartu 6: Grafik */}
-            <div
-              style={cardStyle}
-              onClick={() => goTo("grafik")}
-              onMouseOver={(e) =>
-                (e.currentTarget.style.borderColor = "#0088cc")
-              }
-              onMouseOut={(e) => (e.currentTarget.style.borderColor = "#eee")}
-            >
-              <span
-                style={{
-                  fontSize: "60px",
-                  color: "#0088cc",
-                  marginBottom: "15px",
-                }}
-              >
-                📈
-              </span>
-              <span
-                style={{ fontSize: "20px", fontWeight: "bold", color: "#333" }}
-              >
-                grafik
-              </span>
-            </div>
+              grafik
+            </span>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </MainLayout>
   );
 };
 

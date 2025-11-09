@@ -6,6 +6,8 @@ import Dashboard from "./pages/Dashboard";
 // import CreateStore from "./pages/CreateStore";
 import SetupPage from "./pages/SetupPage";
 import Placeholder from "./pages/Placeholder"; // Import placeholder
+import CategoryList from "./pages/CategoryList";
+import CategoryForm from "./pages/CategoryForm";
 
 function App() {
   return (
@@ -16,6 +18,9 @@ function App() {
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/create-store" element={<SetupPage />} />
       <Route path="/feature/:menuName" element={<Placeholder />} />
+      <Route path="/kategori" element={<CategoryList />} />
+      <Route path="/kategori/tambah" element={<CategoryForm />} />
+      <Route path="/kategori/edit/:id" element={<CategoryForm />} />
     </Routes>
   );
 }
