@@ -13,10 +13,16 @@ const port = process.env.PORT || 5000;
 app.use(cors()); // Agar frontend bisa akses
 app.use(express.json()); // Agar bisa baca data JSON dari request body
 
+//import routes
+const authRoutes = require("./routes/authRoutes"); // Import route
+
 // Route Test Sederhana
 app.get("/", (req, res) => {
   res.send("Server Kasirku berjalan dengan baik!");
 });
+
+// Gunakan route
+app.use("/api/auth", authRoutes);
 
 // Jalankan Server
 app.listen(port, () => {
