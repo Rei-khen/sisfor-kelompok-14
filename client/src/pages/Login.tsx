@@ -4,7 +4,8 @@ import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 
 const Login: React.FC = () => {
-  const [username, setUsername] = useState("");
+  // UBAH: Gunakan state 'email' bukan 'username'
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -14,81 +15,180 @@ const Login: React.FC = () => {
     setError("");
 
     try {
+      // UBAH: Kirim email ke backend
       const response = await axios.post(
         "http://localhost:5000/api/auth/login",
         {
-          username,
+          email,
           password,
         }
       );
 
-      // Simpan token ke localStorage agar browser 'ingat' user sudah login
       localStorage.setItem("token", response.data.token);
-      // Simpan juga info user jika perlu
       localStorage.setItem("user", JSON.stringify(response.data.user));
 
       alert("Login berhasil!");
-      navigate("/dashboard"); // Arahkan ke dashboard
+      navigate("/dashboard");
     } catch (err: any) {
-      setError(err.response?.data?.message || "Login gagal.");
+      setError(
+        err.response?.data?.message || "Login gagal. Cek email dan password."
+      );
     }
   };
 
+  // Styles
+  const pageContainerStyle: React.CSSProperties = {
+    minHeight: "100vh",
+    width: "100vw",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#f0f2f5", // Warna background lembut
+  };
+
+  const cardStyle: React.CSSProperties = {
+    backgroundColor: "white",
+    padding: "40px",
+    borderRadius: "12px",
+    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)", // Shadow lebih halus
+    width: "100%",
+    maxWidth: "400px",
+    margin: "20px",
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    padding: "12px 15px",
+    marginBottom: "20px",
+    border: "1px solid #ddd",
+    borderRadius: "8px",
+    fontSize: "16px",
+    outline: "none",
+    transition: "border-color 0.2s",
+  };
+
+  const buttonStyle: React.CSSProperties = {
+    width: "100%",
+    padding: "14px",
+    backgroundColor: "#0a0a5e", // Warna biru tua sesuai tema Kasirku
+    color: "white",
+    border: "none",
+    borderRadius: "8px",
+    fontSize: "16px",
+    fontWeight: "bold",
+    cursor: "pointer",
+    transition: "background-color 0.2s",
+  };
+
   return (
-    <div
-      style={{
-        maxWidth: "400px",
-        margin: "50px auto",
-        padding: "20px",
-        border: "1px solid #ccc",
-        borderRadius: "8px",
-      }}
-    >
-      <h2>Login Kasirku</h2>
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      <form onSubmit={handleLogin}>
-        <div style={{ marginBottom: "15px" }}>
-          <label style={{ display: "block", marginBottom: "5px" }}>
-            Username:
-          </label>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-            style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
-          />
-        </div>
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ display: "block", marginBottom: "5px" }}>
-            Password:
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
-          />
-        </div>
-        <button
-          type="submit"
+    <div style={pageContainerStyle}>
+      <div style={cardStyle}>
+        <h2
           style={{
-            width: "100%",
-            padding: "10px",
-            backgroundColor: "green",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
+            textAlign: "center",
+            color: "#0a0a5e",
+            marginBottom: "10px",
+            marginTop: 0,
           }}
         >
-          Masuk
-        </button>
-      </form>
-      <p style={{ marginTop: "15px", textAlign: "center" }}>
-        Belum punya akun? <Link to="/register">Daftar di sini</Link>
-      </p>
+          Login Kasirku
+        </h2>
+        <p
+          style={{
+            textAlign: "center",
+            color: "#666",
+            marginBottom: "30px",
+            marginTop: 0,
+          }}
+        >
+          Masuk untuk mengelola tokomu
+        </p>
+
+        {error && (
+          <div
+            style={{
+              backgroundColor: "#ffebee",
+              color: "#d32f2f",
+              padding: "12px",
+              borderRadius: "8px",
+              marginBottom: "20px",
+              fontSize: "14px",
+              textAlign: "center",
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleLogin}>
+          <div>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                fontWeight: "500",
+                color: "#333",
+              }}
+            >
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder="contoh@email.com"
+              style={inputStyle}
+            />
+          </div>
+          <div>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                fontWeight: "500",
+                color: "#333",
+              }}
+            >
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              placeholder="Masukkan password"
+              style={inputStyle}
+            />
+          </div>
+          <button
+            type="submit"
+            style={buttonStyle}
+            onMouseOver={(e) =>
+              (e.currentTarget.style.backgroundColor = "#0d0d7a")
+            }
+            onMouseOut={(e) =>
+              (e.currentTarget.style.backgroundColor = "#0a0a5e")
+            }
+          >
+            Masuk
+          </button>
+        </form>
+
+        <p style={{ marginTop: "25px", textAlign: "center", color: "#666" }}>
+          Belum punya akun?{" "}
+          <Link
+            to="/register"
+            style={{
+              color: "#0a0a5e",
+              fontWeight: "bold",
+              textDecoration: "none",
+            }}
+          >
+            Daftar sekarang
+          </Link>
+        </p>
+      </div>
     </div>
   );
 };

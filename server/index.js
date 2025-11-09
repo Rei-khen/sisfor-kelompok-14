@@ -15,6 +15,7 @@ app.use(express.json()); // Agar bisa baca data JSON dari request body
 
 //import routes
 const authRoutes = require("./routes/authRoutes"); // Import route
+const storeRoutes = require("./routes/storeRoutes");
 
 // Route Test Sederhana
 app.get("/", (req, res) => {
@@ -23,6 +24,7 @@ app.get("/", (req, res) => {
 
 // Gunakan route
 app.use("/api/auth", authRoutes);
+app.use("/api/store", storeRoutes);
 
 // Jalankan Server
 app.listen(port, () => {
