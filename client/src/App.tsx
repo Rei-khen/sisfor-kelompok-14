@@ -1,15 +1,16 @@
 // client/src/App.tsx
 import { Routes, Route, Navigate } from "react-router-dom";
 import Register from "./pages/Register";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
 
 function App() {
   return (
     <Routes>
-      {/* Redirect halaman utama ke /register untuk sementara */}
-      <Route path="/" element={<Navigate to="/register" replace />} />
+      <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/register" element={<Register />} />
-      {/* Route login kita siapkan placeholder-nya dulu */}
-      <Route path="/login" element={<div>Halaman Login (Segera Hadir)</div>} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/dashboard" element={<Dashboard />} />
     </Routes>
   );
 }
