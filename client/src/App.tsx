@@ -8,6 +8,8 @@ import SetupPage from "./pages/SetupPage";
 import Placeholder from "./pages/Placeholder"; // Import placeholder
 import CategoryList from "./pages/CategoryList";
 import CategoryForm from "./pages/CategoryForm";
+import ProductList from "./pages/ProductList";
+import ProductForm from "./pages/ProductForm";
 
 function App() {
   return (
@@ -21,6 +23,14 @@ function App() {
       <Route path="/kategori" element={<CategoryList />} />
       <Route path="/kategori/tambah" element={<CategoryForm />} />
       <Route path="/kategori/edit/:id" element={<CategoryForm />} />
+      <Route path="/produk" element={<ProductList />} />
+      <Route path="/produk/tambah" element={<ProductForm />} />
+
+      {/* Ganti placeholder produk yang lama */}
+      <Route
+        path="/feature/produk"
+        element={<Navigate to="/produk" replace />}
+      />
     </Routes>
   );
 }

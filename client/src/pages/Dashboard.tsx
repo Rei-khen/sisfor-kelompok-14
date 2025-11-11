@@ -210,7 +210,7 @@ const Dashboard: React.FC = () => {
           {/* Kartu 5: Produk - Kita arahkan langsung ke Kategori dulu sebagai pusat produk */}
           <div
             style={cardStyle}
-            onClick={() => goTo("/kategori")}
+            onClick={() => goTo("/produk")}
             onMouseOver={(e) => {
               e.currentTarget.style.transform = "translateY(-5px)";
               e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.1)";
