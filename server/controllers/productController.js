@@ -126,11 +126,12 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-// 2. LOGIKA "MENAMPILKAN PRODUK" (Ini tetap sama)
+// 2. LOGIKA "MENAMPILKAN PRODUK" (Updated dengan Variasi)
 exports.getProducts = async (req, res) => {
   try {
     const { storeId } = await getStoreAndUser(req);
 
+    // 1. Ambil data produk utama
     const [products] = await db.query(
       `SELECT p.*, c.category_name 
              FROM products p
@@ -140,7 +141,31 @@ exports.getProducts = async (req, res) => {
       [storeId]
     );
 
-    res.json(products);
+    // 2. Ambil SEMUA variasi harga milik toko ini (dioptimalkan)
+    // Kita cari variasi yang product_id-nya ada di daftar produk toko ini
+    const productIds = products.map((p) => p.product_id);
+    let variants = [];
+
+    if (productIds.length > 0) {
+      const [rows] = await db.query(
+        `SELECT * FROM product_price_variants WHERE product_id IN (?)`,
+        [productIds]
+      );
+      variants = rows;
+    }
+
+    // 3. Gabungkan variasi ke dalam objek produk
+    const productsWithVariants = products.map((product) => {
+      const productVariants = variants.filter(
+        (v) => v.product_id === product.product_id
+      );
+      return {
+        ...product,
+        variants: productVariants, // Tambahkan array variants ke respon
+      };
+    });
+
+    res.json(productsWithVariants);
   } catch (error) {
     console.error("Error fetch products:", error);
     res
