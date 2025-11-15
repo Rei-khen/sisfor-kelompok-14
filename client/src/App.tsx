@@ -10,6 +10,7 @@ import CategoryList from "./pages/CategoryList";
 import CategoryForm from "./pages/CategoryForm";
 import ProductList from "./pages/ProductList";
 import ProductForm from "./pages/ProductForm";
+import SalesCatalog from "./pages/SalesCatalog";
 
 function App() {
   return (
@@ -30,6 +31,17 @@ function App() {
       <Route
         path="/feature/produk"
         element={<Navigate to="/produk" replace />}
+      />
+
+      <Route path="/penjualan" element={<SalesCatalog />} />
+
+      {/* Siapkan rute untuk Pembayaran nanti */}
+      {/* <Route path="/pembayaran" element={<CheckoutPage />} /> */}
+
+      {/* Arahkan placeholder 'Penjualan' dari Dashboard ke sini */}
+      <Route
+        path="/feature/penjualan"
+        element={<Navigate to="/penjualan" replace />}
       />
     </Routes>
   );

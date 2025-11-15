@@ -147,7 +147,7 @@ const Dashboard: React.FC = () => {
           {/* Kartu 2: Penjualan */}
           <div
             style={cardStyle}
-            onClick={() => goTo("/feature/penjualan")}
+            onClick={() => goTo("/penjualan")}
             onMouseOver={(e) => {
               e.currentTarget.style.transform = "translateY(-5px)";
               e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.1)";
