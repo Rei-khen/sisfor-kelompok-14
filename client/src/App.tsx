@@ -11,6 +11,9 @@ import CategoryForm from "./pages/CategoryForm";
 import ProductList from "./pages/ProductList";
 import ProductForm from "./pages/ProductForm";
 import SalesCatalog from "./pages/SalesCatalog";
+import CheckoutPage from "./pages/CheckoutPage"; // Halaman Pembayaran Utama
+import PaymentMethodSelect from "./pages/PaymentMethodSelect"; // Halaman Pilih E-Wallet
+import PaymentGateway from "./pages/PaymentGateway"; // Halaman Konfirmasi E-Wallet
 
 function App() {
   return (
@@ -42,6 +45,23 @@ function App() {
       <Route
         path="/feature/penjualan"
         element={<Navigate to="/penjualan" replace />}
+      />
+
+      <Route path="/penjualan" element={<SalesCatalog />} />
+
+      {/* Rute Baru untuk Pembayaran */}
+      <Route path="/pembayaran" element={<CheckoutPage />} />
+      <Route path="/pilih-metode" element={<PaymentMethodSelect />} />
+      <Route path="/payment-gateway/:methodName" element={<PaymentGateway />} />
+
+      {/* Arahkan placeholder */}
+      <Route
+        path="/feature/penjualan"
+        element={<Navigate to="/penjualan" replace />}
+      />
+      <Route
+        path="/feature/pembayaran"
+        element={<Navigate to="/pembayaran" replace />}
       />
     </Routes>
   );

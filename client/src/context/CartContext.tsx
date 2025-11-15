@@ -1,5 +1,10 @@
 // client/src/context/CartContext.tsx
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  type ReactNode,
+} from "react";
 
 // Tipe data untuk produk (bisa disesuaikan dari ProductList)
 interface Product {
