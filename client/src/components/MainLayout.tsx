@@ -1,5 +1,5 @@
 // client/src/components/MainLayout.tsx
-import React, { ReactNode } from "react";
+import React, { type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface MainLayoutProps {
@@ -124,10 +124,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           >
             <span style={{ marginRight: "10px" }}>🏭</span> Gudang
           </li>
-          <li
-            style={sidebarItemStyle}
-            onClick={() => navigate("/feature/karyawan")}
-          >
+          <li style={sidebarItemStyle} onClick={() => navigate("/karyawan")}>
             <span style={{ marginRight: "10px" }}>👥</span> Karyawan
           </li>
           <li

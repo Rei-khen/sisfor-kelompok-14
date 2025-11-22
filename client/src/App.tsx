@@ -14,6 +14,8 @@ import SalesCatalog from "./pages/SalesCatalog";
 import CheckoutPage from "./pages/CheckoutPage"; // Halaman Pembayaran Utama
 import PaymentMethodSelect from "./pages/PaymentMethodSelect"; // Halaman Pilih E-Wallet
 import PaymentGateway from "./pages/PaymentGateway"; // Halaman Konfirmasi E-Wallet
+import EmployeeList from "./pages/EmployeeList";
+import EmployeeForm from "./pages/EmployeeForm";
 
 function App() {
   return (
@@ -62,6 +64,13 @@ function App() {
       <Route
         path="/feature/pembayaran"
         element={<Navigate to="/pembayaran" replace />}
+      />
+
+      <Route path="/karyawan" element={<EmployeeList />} />
+      <Route path="/karyawan/tambah" element={<EmployeeForm />} />
+      <Route
+        path="/feature/karyawan"
+        element={<Navigate to="/karyawan" replace />}
       />
     </Routes>
   );
