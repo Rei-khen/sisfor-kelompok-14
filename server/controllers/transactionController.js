@@ -90,12 +90,13 @@ exports.createTransaction = async (req, res) => {
 };
 
 // 2. GET - Ambil Daftar Transaksi (dengan filter tanggal opsional)
+// 2. GET - Ambil Daftar Transaksi dengan Filter Lengkap
 exports.getTransactions = async (req, res) => {
   try {
     const { storeId } = await getStoreAndUser(req);
 
-    // Ambil parameter tanggal dari query (opsional)
-    const { startDate, endDate } = req.query;
+    // Ambil parameter dari query string (frontend)
+    const { date, paymentType, cashierId, search } = req.query;
 
     let query = `
             SELECT t.*, u.username as cashier_name
@@ -105,12 +106,39 @@ exports.getTransactions = async (req, res) => {
         `;
     const params = [storeId];
 
-    if (startDate && endDate) {
-      query += " AND DATE(t.transaction_time) BETWEEN ? AND ?";
-      params.push(startDate, endDate);
+    // 1. Filter Tanggal (Jika ada)
+    if (date) {
+      query += " AND DATE(t.transaction_time) = ?";
+      params.push(date);
     }
 
-    query += " ORDER BY t.transaction_time DESC"; // Paling baru di atas
+    // 2. Filter Metode Bayar (Tunai vs Non-Tunai)
+    if (paymentType) {
+      if (paymentType === "tunai") {
+        query += " AND t.payment_method = 'Tunai'";
+      } else if (paymentType === "non-tunai") {
+        // Anggap semua yang bukan 'Tunai' adalah Non-Tunai
+        query += " AND t.payment_method != 'Tunai'";
+      }
+    }
+
+    // 3. Filter Kasir
+    if (cashierId) {
+      query += " AND t.user_id = ?";
+      params.push(cashierId);
+    }
+
+    // 4. Filter Cari Struk (Search ID)
+    if (search) {
+      // User mungkin mengetik "SR123", kita ambil angkanya saja "123"
+      const idNumber = search.replace(/\D/g, "");
+      if (idNumber) {
+        query += " AND t.transaction_id LIKE ?";
+        params.push(`%${idNumber}%`);
+      }
+    }
+
+    query += " ORDER BY t.transaction_time DESC";
 
     const [transactions] = await db.query(query, params);
     res.json(transactions);
