@@ -16,6 +16,8 @@ import PaymentMethodSelect from "./pages/PaymentMethodSelect"; // Halaman Pilih 
 import PaymentGateway from "./pages/PaymentGateway"; // Halaman Konfirmasi E-Wallet
 import EmployeeList from "./pages/EmployeeList";
 import EmployeeForm from "./pages/EmployeeForm";
+import TransactionHistory from "./pages/TransactionHistory";
+import TransactionDetail from "./pages/TransactionDetail";
 
 function App() {
   return (
@@ -31,31 +33,24 @@ function App() {
       <Route path="/kategori/edit/:id" element={<CategoryForm />} />
       <Route path="/produk" element={<ProductList />} />
       <Route path="/produk/tambah" element={<ProductForm />} />
-
       {/* Ganti placeholder produk yang lama */}
       <Route
         path="/feature/produk"
         element={<Navigate to="/produk" replace />}
       />
-
       <Route path="/penjualan" element={<SalesCatalog />} />
-
       {/* Siapkan rute untuk Pembayaran nanti */}
       {/* <Route path="/pembayaran" element={<CheckoutPage />} /> */}
-
       {/* Arahkan placeholder 'Penjualan' dari Dashboard ke sini */}
       <Route
         path="/feature/penjualan"
         element={<Navigate to="/penjualan" replace />}
       />
-
       <Route path="/penjualan" element={<SalesCatalog />} />
-
       {/* Rute Baru untuk Pembayaran */}
       <Route path="/pembayaran" element={<CheckoutPage />} />
       <Route path="/pilih-metode" element={<PaymentMethodSelect />} />
       <Route path="/payment-gateway/:methodName" element={<PaymentGateway />} />
-
       {/* Arahkan placeholder */}
       <Route
         path="/feature/penjualan"
@@ -65,7 +60,6 @@ function App() {
         path="/feature/pembayaran"
         element={<Navigate to="/pembayaran" replace />}
       />
-
       <Route path="/karyawan" element={<EmployeeList />} />
       <Route path="/karyawan/tambah" element={<EmployeeForm />} />
       <Route
@@ -73,6 +67,14 @@ function App() {
         element={<Navigate to="/karyawan" replace />}
       />
       <Route path="/karyawan/edit/:id" element={<EmployeeForm />} />
+      {/* // ... Routes */}
+      <Route path="/histori-penjualan" element={<TransactionHistory />} />
+      <Route path="/histori-penjualan/:id" element={<TransactionDetail />} />
+      {/* // Update placeholder */}
+      <Route
+        path="/feature/histori-penjualan"
+        element={<Navigate to="/histori-penjualan" replace />}
+      />
     </Routes>
   );
 }

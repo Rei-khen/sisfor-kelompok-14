@@ -74,12 +74,10 @@ exports.createTransaction = async (req, res) => {
 
     // Jika semua berhasil
     await connection.commit();
-    res
-      .status(201)
-      .json({
-        message: "Transaksi berhasil disimpan!",
-        transactionId: newTransactionId,
-      });
+    res.status(201).json({
+      message: "Transaksi berhasil disimpan!",
+      transactionId: newTransactionId,
+    });
   } catch (error) {
     await connection.rollback(); // Batalkan semua jika ada 1 error
     console.error("Error saat menyimpan transaksi:", error);
@@ -88,5 +86,76 @@ exports.createTransaction = async (req, res) => {
       .json({ message: "Gagal menyimpan transaksi.", error: error.message });
   } finally {
     connection.release();
+  }
+};
+
+// 2. GET - Ambil Daftar Transaksi (dengan filter tanggal opsional)
+exports.getTransactions = async (req, res) => {
+  try {
+    const { storeId } = await getStoreAndUser(req);
+
+    // Ambil parameter tanggal dari query (opsional)
+    const { startDate, endDate } = req.query;
+
+    let query = `
+            SELECT t.*, u.username as cashier_name
+            FROM transactions t
+            LEFT JOIN users u ON t.user_id = u.user_id
+            WHERE t.store_id = ?
+        `;
+    const params = [storeId];
+
+    if (startDate && endDate) {
+      query += " AND DATE(t.transaction_time) BETWEEN ? AND ?";
+      params.push(startDate, endDate);
+    }
+
+    query += " ORDER BY t.transaction_time DESC"; // Paling baru di atas
+
+    const [transactions] = await db.query(query, params);
+    res.json(transactions);
+  } catch (error) {
+    console.error("Error fetch transactions:", error);
+    res.status(500).json({ message: "Gagal mengambil data transaksi." });
+  }
+};
+
+// 3. GET (Single) - Ambil Detail Transaksi (termasuk items)
+exports.getTransactionById = async (req, res) => {
+  try {
+    const { storeId } = await getStoreAndUser(req);
+    const transactionId = req.params.id;
+
+    // 1. Ambil Data Utama Transaksi
+    const [transactions] = await db.query(
+      `SELECT t.*, u.username as cashier_name, s.display_name as store_name
+             FROM transactions t
+             LEFT JOIN users u ON t.user_id = u.user_id
+             LEFT JOIN stores s ON t.store_id = s.store_id
+             WHERE t.transaction_id = ? AND t.store_id = ?`,
+      [transactionId, storeId]
+    );
+
+    if (transactions.length === 0) {
+      return res.status(404).json({ message: "Transaksi tidak ditemukan." });
+    }
+    const transaction = transactions[0];
+
+    // 2. Ambil Detail Item (Produk yang dibeli)
+    const [items] = await db.query(
+      `SELECT td.*, p.product_name 
+             FROM transaction_details td
+             LEFT JOIN products p ON td.product_id = p.product_id
+             WHERE td.transaction_id = ?`,
+      [transactionId]
+    );
+
+    // Gabungkan
+    transaction.items = items;
+
+    res.json(transaction);
+  } catch (error) {
+    console.error("Error fetch transaction detail:", error);
+    res.status(500).json({ message: "Gagal mengambil detail transaksi." });
   }
 };
