@@ -72,6 +72,7 @@ function App() {
         path="/feature/karyawan"
         element={<Navigate to="/karyawan" replace />}
       />
+      <Route path="/karyawan/edit/:id" element={<EmployeeForm />} />
     </Routes>
   );
 }

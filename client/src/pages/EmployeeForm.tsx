@@ -1,24 +1,29 @@
+// client/src/pages/EmployeeForm.tsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import MainLayout from "../components/MainLayout";
 
 const EmployeeForm: React.FC = () => {
   const navigate = useNavigate();
+  const { id } = useParams(); // Cek apakah ada ID di URL
+  const isEditMode = !!id; // True jika sedang edit
+
   const [activeTab, setActiveTab] = useState<"info" | "fitur">("info");
   const [storeName, setStoreName] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
     username: "",
-    password: "", // Password wajib untuk user baru
-    email: "", // Butuh email untuk login sesuai sistem kita
+    password: "",
+    email: "",
     phone_number: "",
     role: "kasir",
     status: "aktif",
   });
 
-  // Permissions State (Checkbox)
+  // Permissions State
   const [permissions, setPermissions] = useState({
     produk: false,
     penjualan: false,
@@ -30,7 +35,7 @@ const EmployeeForm: React.FC = () => {
     buat_barcode: false,
   });
 
-  // Ambil Store Name saat load
+  // 1. Ambil Store Name (Selalu dijalankan)
   useEffect(() => {
     const fetchStore = async () => {
       try {
@@ -43,11 +48,54 @@ const EmployeeForm: React.FC = () => {
         );
         setStoreName(res.data.store_name);
       } catch (error) {
-        console.error("Gagal ambil toko", error);
+        console.error(error);
       }
     };
     fetchStore();
   }, []);
+
+  // 2. Jika Edit Mode: Ambil data karyawan yang mau diedit
+  useEffect(() => {
+    if (isEditMode) {
+      const fetchEmployee = async () => {
+        try {
+          const token = localStorage.getItem("token");
+          const res = await axios.get(
+            `http://localhost:5000/api/employees/${id}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          const emp = res.data;
+
+          // Isi Form Data
+          setFormData({
+            username: emp.username,
+            password: "", // Kosongkan password (biar tidak terekspos hash-nya)
+            email: emp.email,
+            phone_number: emp.phone_number,
+            role: emp.role,
+            status: emp.status,
+          });
+
+          // Isi Checkbox Permissions
+          // Backend mengirim array ['produk', 'jurnal'], kita ubah jadi object {produk: true, ...}
+          const serverPermissions = emp.permissions || [];
+          const newPerms = { ...permissions };
+          Object.keys(newPerms).forEach((key) => {
+            // @ts-ignore
+            newPerms[key] = serverPermissions.includes(key);
+          });
+          setPermissions(newPerms);
+        } catch (error) {
+          alert("Gagal mengambil data karyawan.");
+          navigate("/karyawan");
+        }
+      };
+      fetchEmployee();
+    }
+  }, [isEditMode, id, navigate]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -63,10 +111,9 @@ const EmployeeForm: React.FC = () => {
   };
 
   const handleSubmit = async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem("token");
-
-      // Konversi objek permissions menjadi array string ['produk', 'jurnal', ...]
       const activePermissions = Object.keys(permissions).filter(
         (key) => permissions[key as keyof typeof permissions]
       );
@@ -76,18 +123,29 @@ const EmployeeForm: React.FC = () => {
         permissions: activePermissions,
       };
 
-      await axios.post("http://localhost:5000/api/employees", payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      if (isEditMode) {
+        // API UPDATE
+        await axios.put(`http://localhost:5000/api/employees/${id}`, payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        alert("Data karyawan berhasil diperbarui!");
+      } else {
+        // API CREATE
+        await axios.post("http://localhost:5000/api/employees", payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        alert("Karyawan berhasil ditambahkan!");
+      }
 
-      alert("Karyawan berhasil ditambahkan!");
       navigate("/karyawan");
     } catch (error: any) {
       alert("Gagal: " + (error.response?.data?.message || error.message));
+    } finally {
+      setLoading(false);
     }
   };
 
-  // STYLES
+  // Styles (Sama seperti sebelumnya)
   const tabBtnStyle = (isActive: boolean): React.CSSProperties => ({
     flex: 1,
     padding: "12px",
@@ -98,7 +156,6 @@ const EmployeeForm: React.FC = () => {
     border: "1px solid #00acc1",
     fontWeight: "bold",
   });
-
   const inputStyle: React.CSSProperties = {
     width: "100%",
     padding: "10px",
@@ -106,14 +163,12 @@ const EmployeeForm: React.FC = () => {
     border: "1px solid #ccc",
     marginBottom: "15px",
   };
-
   const labelStyle: React.CSSProperties = {
     display: "block",
     marginBottom: "5px",
     fontWeight: "bold",
     color: "#333",
   };
-
   const checkboxRowStyle: React.CSSProperties = {
     display: "flex",
     justifyContent: "space-between",
@@ -142,9 +197,12 @@ const EmployeeForm: React.FC = () => {
             marginBottom: "20px",
           }}
         >
-          <h2 style={{ margin: 0, color: "#333" }}>Pegawai</h2>
+          <h2 style={{ margin: 0, color: "#333" }}>
+            {isEditMode ? "Edit Pegawai" : "Tambah Pegawai"}
+          </h2>
           <button
             onClick={handleSubmit}
+            disabled={loading}
             style={{
               padding: "10px 20px",
               backgroundColor: "#0277bd",
@@ -155,11 +213,10 @@ const EmployeeForm: React.FC = () => {
               fontWeight: "bold",
             }}
           >
-            simpan
+            {loading ? "Menyimpan..." : "Simpan"}
           </button>
         </div>
 
-        {/* TAB NAVIGATION */}
         <div
           style={{
             display: "flex",
@@ -182,7 +239,6 @@ const EmployeeForm: React.FC = () => {
           </div>
         </div>
 
-        {/* KONTEN TAB 1: INFORMASI DASAR */}
         {activeTab === "info" && (
           <div>
             <label style={labelStyle}>storename</label>
@@ -215,13 +271,31 @@ const EmployeeForm: React.FC = () => {
               style={inputStyle}
             />
 
-            <label style={labelStyle}>password</label>
+            <label style={labelStyle}>
+              password{" "}
+              {isEditMode && (
+                <span
+                  style={{
+                    fontWeight: "normal",
+                    fontSize: "12px",
+                    color: "#888",
+                  }}
+                >
+                  (Isi hanya jika ingin mengubah)
+                </span>
+              )}
+            </label>
             <input
               type="password"
               name="password"
               value={formData.password}
               onChange={handleChange}
               style={inputStyle}
+              placeholder={
+                isEditMode
+                  ? "Biarkan kosong jika tidak ingin mengubah password"
+                  : ""
+              }
             />
 
             <label style={labelStyle}>no telepon</label>
@@ -257,7 +331,6 @@ const EmployeeForm: React.FC = () => {
           </div>
         )}
 
-        {/* KONTEN TAB 2: FITUR APLIKASI */}
         {activeTab === "fitur" && (
           <div>
             {[
@@ -274,7 +347,6 @@ const EmployeeForm: React.FC = () => {
                 <span style={{ fontSize: "16px", color: "#333" }}>
                   {item.label}
                 </span>
-                {/* Checkbox Sederhana */}
                 <input
                   type="checkbox"
                   checked={permissions[item.key as keyof typeof permissions]}
@@ -286,7 +358,6 @@ const EmployeeForm: React.FC = () => {
           </div>
         )}
 
-        {/* Footer Navigasi Sederhana (Opsional) */}
         <div
           style={{
             display: "flex",
@@ -306,7 +377,7 @@ const EmployeeForm: React.FC = () => {
           >
             {"<"} Kembali
           </button>
-          {activeTab === "info" ? (
+          {activeTab === "info" && (
             <button
               onClick={() => setActiveTab("fitur")}
               style={{
@@ -318,21 +389,6 @@ const EmployeeForm: React.FC = () => {
               }}
             >
               Lanjut {">"}
-            </button>
-          ) : (
-            <button
-              onClick={handleSubmit}
-              style={{
-                padding: "10px 20px",
-                backgroundColor: "#0277bd",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-                fontWeight: "bold",
-              }}
-            >
-              simpan
             </button>
           )}
         </div>

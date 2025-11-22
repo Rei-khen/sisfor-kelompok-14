@@ -94,6 +94,7 @@ const EmployeeList: React.FC = () => {
           <div key={emp.user_id} style={cardStyle}>
             {/* Ikon Edit di pojok kanan atas */}
             <div
+              onClick={() => navigate(`/karyawan/edit/${emp.user_id}`)} // Update baris ini
               style={{
                 position: "absolute",
                 top: "15px",

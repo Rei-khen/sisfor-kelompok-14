@@ -9,4 +9,8 @@ router.use(verifyToken);
 router.get("/", employeeController.getEmployees);
 router.post("/", employeeController.createEmployee);
 
+// Rute baru untuk EDIT
+router.get("/:id", employeeController.getEmployeeById); // Ambil data lama
+router.put("/:id", employeeController.updateEmployee); // Simpan data baru
+
 module.exports = router;
