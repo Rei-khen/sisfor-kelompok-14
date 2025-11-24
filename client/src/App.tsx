@@ -18,6 +18,7 @@ import EmployeeList from "./pages/EmployeeList";
 import EmployeeForm from "./pages/EmployeeForm";
 import TransactionHistory from "./pages/TransactionHistory";
 import TransactionDetail from "./pages/TransactionDetail";
+import RestockPage from "./pages/RestockPage";
 
 function App() {
   return (
@@ -74,6 +75,13 @@ function App() {
       <Route
         path="/feature/histori-penjualan"
         element={<Navigate to="/histori-penjualan" replace />}
+      />
+
+      <Route path="/restok" element={<RestockPage />} />
+      {/* // Update placeholder */}
+      <Route
+        path="/feature/restok"
+        element={<Navigate to="/restok" replace />}
       />
     </Routes>
   );

@@ -127,10 +127,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           <li style={sidebarItemStyle} onClick={() => navigate("/karyawan")}>
             <span style={{ marginRight: "10px" }}>👥</span> Karyawan
           </li>
-          <li
-            style={sidebarItemStyle}
-            onClick={() => navigate("/feature/restok")}
-          >
+          <li style={sidebarItemStyle} onClick={() => navigate("/restok")}>
             <span style={{ marginRight: "10px" }}>🔄</span> Restok
           </li>
           {/* Menu Kategori aktif */}

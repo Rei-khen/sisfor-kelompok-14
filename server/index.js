@@ -20,6 +20,7 @@ const categoryRoutes = require("./routes/categoryRoutes");
 const productRoutes = require("./routes/productRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
 const employeeRoutes = require("./routes/employeeRoutes");
+const restockRoutes = require("./routes/restockRoutes");
 
 // Route Test Sederhana
 app.get("/", (req, res) => {
@@ -33,6 +34,7 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/employees", employeeRoutes);
+app.use("/api/restock", restockRoutes);
 
 // Jalankan Server
 app.listen(port, () => {
