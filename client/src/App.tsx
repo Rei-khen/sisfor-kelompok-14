@@ -19,6 +19,7 @@ import EmployeeForm from "./pages/EmployeeForm";
 import TransactionHistory from "./pages/TransactionHistory";
 import TransactionDetail from "./pages/TransactionDetail";
 import RestockPage from "./pages/RestockPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
 
 function App() {
   return (
@@ -87,6 +88,12 @@ function App() {
       <Route path="/produk" element={<ProductList />} />
       <Route path="/produk/tambah" element={<ProductForm />} />
       <Route path="/produk/edit/:id" element={<ProductForm />} />
+
+      <Route path="/grafik" element={<AnalyticsPage />} />
+      <Route
+        path="/feature/grafik"
+        element={<Navigate to="/grafik" replace />}
+      />
     </Routes>
   );
 }

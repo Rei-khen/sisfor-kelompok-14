@@ -231,7 +231,7 @@ const Dashboard: React.FC = () => {
           {/* Kartu 6: Grafik */}
           <div
             style={cardStyle}
-            onClick={() => goTo("/feature/grafik")}
+            onClick={() => goTo("/grafik")}
             onMouseOver={(e) => {
               e.currentTarget.style.transform = "translateY(-5px)";
               e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.1)";
