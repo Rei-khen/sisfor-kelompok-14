@@ -17,4 +17,7 @@ router.get("/:id/sales", productController.getProductSalesHistory);
 // (Kita tambahkan rute DELETE dan UPDATE nanti)
 // router.delete('/:id', productController.deleteProduct);
 
+router.get("/:id", productController.getProductById); // Ambil 1 produk
+router.put("/:id", productController.updateProduct); // Simpan perubahan
+
 module.exports = router;

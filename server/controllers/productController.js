@@ -203,3 +203,128 @@ exports.getProductSalesHistory = async (req, res) => {
       .json({ message: "Gagal mengambil data histori penjualan." });
   }
 };
+
+// server/controllers/productController.js
+
+// ... (kode sebelumnya tetap ada) ...
+
+// 4. GET (Single) - Ambil Detail Produk untuk Edit
+exports.getProductById = async (req, res) => {
+  try {
+    const { storeId } = await getStoreAndUser(req);
+    const productId = req.params.id;
+
+    // 1. Ambil data produk utama
+    const [products] = await db.query(
+      `SELECT * FROM products WHERE product_id = ? AND store_id = ?`,
+      [productId, storeId]
+    );
+
+    if (products.length === 0) {
+      return res.status(404).json({ message: "Produk tidak ditemukan." });
+    }
+    const product = products[0];
+
+    // 2. Ambil variasi harga
+    const [variants] = await db.query(
+      `SELECT variant_name, price FROM product_price_variants WHERE product_id = ?`,
+      [productId]
+    );
+
+    // Gabungkan
+    product.price_variants = variants;
+
+    res.json(product);
+  } catch (error) {
+    console.error("Error fetch product detail:", error);
+    res.status(500).json({ message: "Gagal mengambil data produk." });
+  }
+};
+
+// 5. PUT - Update Produk
+exports.updateProduct = async (req, res) => {
+  const connection = await db.getConnection();
+  await connection.beginTransaction();
+
+  try {
+    const { storeId } = await getStoreAndUser(req);
+    const productId = req.params.id;
+
+    const {
+      product_name,
+      category_id,
+      description,
+      barcode,
+      unit,
+      weight,
+      serial_number,
+      price_cost_determination,
+      price_sell,
+      stock_management_type,
+      min_stock_alert,
+      unit_purchase_price,
+      price_variants,
+    } = req.body;
+
+    // Tentukan harga pokok baru (jika ada perubahan)
+    const final_purchase_price =
+      price_cost_determination || unit_purchase_price || 0;
+
+    // 1. Update tabel Products
+    // Catatan: Kita TIDAK mengupdate 'current_stock' di sini agar stok tetap akurat sesuai riwayat.
+    // Stok hanya diubah lewat fitur Restok atau Penjualan/Opname.
+    await connection.query(
+      `UPDATE products SET 
+                category_id = ?, product_name = ?, description = ?, barcode = ?, 
+                unit = ?, weight = ?, serial_number = ?, 
+                purchase_price = ?, selling_price = ?, 
+                stock_management_type = ?, min_stock_alert = ?
+             WHERE product_id = ? AND store_id = ?`,
+      [
+        category_id || null,
+        product_name,
+        description,
+        barcode || null,
+        unit,
+        weight || null,
+        serial_number,
+        final_purchase_price,
+        price_sell,
+        stock_management_type,
+        min_stock_alert || 0,
+        productId,
+        storeId,
+      ]
+    );
+
+    // 2. Update Variasi Harga
+    // Cara paling aman: Hapus semua variasi lama, insert yang baru
+    await connection.query(
+      "DELETE FROM product_price_variants WHERE product_id = ?",
+      [productId]
+    );
+
+    if (price_variants && price_variants.length > 0) {
+      const variantValues = price_variants.map((v) => [
+        productId,
+        v.variant_name,
+        v.price,
+      ]);
+      await connection.query(
+        "INSERT INTO product_price_variants (product_id, variant_name, price) VALUES ?",
+        [variantValues]
+      );
+    }
+
+    await connection.commit();
+    res.json({ message: "Produk berhasil diperbarui!" });
+  } catch (error) {
+    await connection.rollback();
+    console.error("Error update product:", error);
+    res
+      .status(500)
+      .json({ message: "Gagal update produk.", error: error.message });
+  } finally {
+    connection.release();
+  }
+};

@@ -1,30 +1,34 @@
 // client/src/pages/ProductForm.tsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom"; // Import useParams
 import MainLayout from "../components/MainLayout";
 
-// Tipe data kategori untuk dropdown
 interface Category {
   category_id: number;
   category_name: string;
 }
 
-// Tipe data untuk state form
+// Interface untuk Variant
+interface Variant {
+  variant_name: string;
+  price: number;
+}
+
+// Interface FormData
 interface FormData {
   product_name: string;
   category_id: string;
-  price_cost_determination: number | string; // "Harga pokok ditentukan"
+  price_cost_determination: number | string;
   price_sell: number | string;
-  // --- Opsional ---
   description: string;
   barcode: string;
   stock_management_type: string;
   purchase_price_method: string;
   initial_stock: number | string;
   min_stock_alert: number | string;
-  total_purchase_price: number | string; // Dihitung
-  unit_purchase_price: number | string; // "Harga satu pembelian stok"
+  total_purchase_price: number | string;
+  unit_purchase_price: number | string;
   selling_price_method: string;
   unit: string;
   weight: number | string;
@@ -33,9 +37,11 @@ interface FormData {
 
 const ProductForm: React.FC = () => {
   const navigate = useNavigate();
+  const { id } = useParams(); // Cek ID di URL
+  const isEditMode = !!id; // True jika sedang edit
+
   const [categories, setCategories] = useState<Category[]>([]);
 
-  // State utama untuk semua field
   const [formData, setFormData] = useState<FormData>({
     product_name: "",
     category_id: "",
@@ -55,14 +61,11 @@ const ProductForm: React.FC = () => {
     serial_number: "",
   });
 
-  // State untuk variasi harga
-  const [variants, setVariants] = useState<
-    { variant_name: string; price: number }[]
-  >([]);
+  const [variants, setVariants] = useState<Variant[]>([]);
   const [variantName, setVariantName] = useState("");
   const [variantPrice, setVariantPrice] = useState(0);
 
-  // Ambil data kategori untuk dropdown
+  // 1. Fetch Kategori (Selalu jalan)
   useEffect(() => {
     const fetchCategories = async () => {
       const token = localStorage.getItem("token");
@@ -74,18 +77,65 @@ const ProductForm: React.FC = () => {
     fetchCategories().catch(console.error);
   }, []);
 
-  // Update form state
+  // 2. Fetch Data Produk (Hanya jika Edit Mode)
+  useEffect(() => {
+    if (isEditMode) {
+      const fetchProduct = async () => {
+        try {
+          const token = localStorage.getItem("token");
+          const res = await axios.get(
+            `http://localhost:5000/api/products/${id}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+          const data = res.data;
+
+          // Isi state dengan data dari backend
+          setFormData({
+            product_name: data.product_name,
+            category_id: data.category_id || "",
+            price_cost_determination: data.purchase_price, // Mapping harga pokok
+            price_sell: data.selling_price,
+            description: data.description || "",
+            barcode: data.barcode || "",
+            stock_management_type: data.stock_management_type,
+            purchase_price_method: "HP ditentukan",
+            // Saat edit, stok awal tidak ditampilkan/diedit di sini (karena sudah masuk sistem)
+            initial_stock: 0,
+            min_stock_alert: data.min_stock_alert,
+            total_purchase_price: 0,
+            unit_purchase_price: 0,
+            selling_price_method: "HJ ditentukan",
+            unit: data.unit || "",
+            weight: data.weight || "",
+            serial_number: data.serial_number || "",
+          });
+
+          setVariants(data.price_variants || []);
+        } catch (error) {
+          console.error(error);
+          alert("Gagal mengambil data produk.");
+          navigate("/produk");
+        }
+      };
+      fetchProduct();
+    }
+  }, [isEditMode, id, navigate]);
+
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
     const { name, value } = e.target;
-
     let newFormData = { ...formData, [name]: value };
 
-    // Logika kalkulasi otomatis (sesuai UI)
-    if (name === "initial_stock" || name === "unit_purchase_price") {
+    // Logika kalkulasi otomatis (Hanya berguna saat tambah baru)
+    if (
+      !isEditMode &&
+      (name === "initial_stock" || name === "unit_purchase_price")
+    ) {
       const stock =
         name === "initial_stock"
           ? Number(value)
@@ -111,42 +161,55 @@ const ProductForm: React.FC = () => {
     }
   };
 
+  const handleRemoveVariant = (index: number) => {
+    const newVariants = [...variants];
+    newVariants.splice(index, 1);
+    setVariants(newVariants);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem("token");
-      // Kirim payload lengkap sesuai yang diharapkan backend
       const payload = {
         ...formData,
         barcode: formData.barcode || null,
         price_variants: variants,
       };
 
-      await axios.post("http://localhost:5000/api/products", payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      if (isEditMode) {
+        // API UPDATE
+        await axios.put(`http://localhost:5000/api/products/${id}`, payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        alert("Produk berhasil diperbarui!");
+      } else {
+        // API CREATE
+        await axios.post("http://localhost:5000/api/products", payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        alert("Produk berhasil ditambahkan!");
+      }
 
-      alert("Produk berhasil ditambahkan!");
-      navigate("/produk"); // Arahkan ke daftar produk
+      navigate("/produk");
     } catch (error: any) {
       console.error("Submit error:", error.response);
       alert(
-        "Gagal menambah produk: " +
+        "Gagal menyimpan produk: " +
           (error.response?.data?.message || "Error tidak diketahui")
       );
     }
   };
 
-  // --- STYLES (Memperbaiki teks putih & layout) ---
+  // Styles
   const pageStyle: React.CSSProperties = {
     maxWidth: "1000px",
     margin: "auto",
     backgroundColor: "white",
     padding: "25px",
     borderRadius: "8px",
-    color: "#333", // Memperbaiki teks putih
+    color: "#333",
   };
-  const formStyle: React.CSSProperties = { color: "#333" };
   const layoutStyle: React.CSSProperties = { display: "flex", gap: "30px" };
   const colLeftStyle: React.CSSProperties = { flex: 2 };
   const colRightStyle: React.CSSProperties = { flex: 1 };
@@ -182,7 +245,7 @@ const ProductForm: React.FC = () => {
   return (
     <MainLayout>
       <div style={pageStyle}>
-        <form onSubmit={handleSubmit} style={formStyle}>
+        <form onSubmit={handleSubmit}>
           {/* Header Form */}
           <div
             style={{
@@ -192,7 +255,9 @@ const ProductForm: React.FC = () => {
               marginBottom: "20px",
             }}
           >
-            <h2 style={{ margin: 0, color: "#050542" }}>TAMBAH PRODUK</h2>
+            <h2 style={{ margin: 0, color: "#050542" }}>
+              {isEditMode ? "EDIT PRODUK" : "TAMBAH PRODUK"}
+            </h2>
             <div>
               <button
                 type="button"
@@ -250,7 +315,7 @@ const ProductForm: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>Harga pokok ditentukan</label>
+                <label style={labelStyle}>Harga pokok</label>
                 <input
                   type="number"
                   name="price_cost_determination"
@@ -294,28 +359,14 @@ const ProductForm: React.FC = () => {
                 <p>
                   drag foto kesini atau <strong>cari</strong>
                 </p>
-                <small>(Fitur upload belum aktif)</small>
               </div>
             </div>
           </div>
 
-          {/* --- Divider Opsional --- */}
           <hr style={dividerStyle} />
-          <span
-            style={{
-              display: "block",
-              textAlign: "right",
-              marginTop: "-35px",
-              marginBottom: "20px",
-              color: "#007bff",
-            }}
-          >
-            opsional
-          </span>
 
-          {/* --- Bagian Opsional (Bawah) --- */}
+          {/* --- Bagian Opsional --- */}
           <div>
-            {/* Masalah 4: Deskripsi di sini */}
             <div>
               <label style={labelStyle}>Deskripsi produk</label>
               <textarea
@@ -326,7 +377,6 @@ const ProductForm: React.FC = () => {
               />
             </div>
 
-            {/* Layout 2 kolom untuk opsional */}
             <div
               style={{
                 display: "grid",
@@ -355,14 +405,19 @@ const ProductForm: React.FC = () => {
                   <option value="no_stock_management">Tanpa Stok (Jasa)</option>
                 </select>
 
-                <label style={labelStyle}>Jumlah stok</label>
-                <input
-                  type="number"
-                  name="initial_stock"
-                  value={formData.initial_stock}
-                  onChange={handleChange}
-                  style={inputStyle}
-                />
+                {/* Stok Awal disembunyikan saat Edit karena membingungkan */}
+                {!isEditMode && (
+                  <>
+                    <label style={labelStyle}>Jumlah stok awal</label>
+                    <input
+                      type="number"
+                      name="initial_stock"
+                      value={formData.initial_stock}
+                      onChange={handleChange}
+                      style={inputStyle}
+                    />
+                  </>
+                )}
 
                 <label style={labelStyle}>Notifikasi limit stok</label>
                 <input
@@ -372,7 +427,9 @@ const ProductForm: React.FC = () => {
                   onChange={handleChange}
                   style={inputStyle}
                 />
+              </div>
 
+              <div>
                 <label style={labelStyle}>Satuan</label>
                 <input
                   type="text"
@@ -381,53 +438,6 @@ const ProductForm: React.FC = () => {
                   onChange={handleChange}
                   style={inputStyle}
                 />
-              </div>
-
-              <div>
-                <label style={labelStyle}>Pengaturan Harga pokok</label>
-                <select
-                  name="purchase_price_method"
-                  value={formData.purchase_price_method}
-                  onChange={handleChange}
-                  style={inputStyle}
-                >
-                  <option value="HP ditentukan">HP ditentukan</option>
-                  <option value="HP rata pembelian stok">
-                    HP rata pembelian stok
-                  </option>
-                  <option value="HP stok terakhir">HP stok terakhir</option>
-                </select>
-
-                <label style={labelStyle}>Harga satu pembelian stok</label>
-                <input
-                  type="number"
-                  name="unit_purchase_price"
-                  value={formData.unit_purchase_price}
-                  onChange={handleChange}
-                  style={inputStyle}
-                />
-
-                <label style={labelStyle}>Harga total pembelian stok Rp</label>
-                <input
-                  type="number"
-                  name="total_purchase_price"
-                  value={formData.total_purchase_price}
-                  style={{ ...inputStyle, backgroundColor: "#eee" }}
-                  readOnly
-                />
-
-                <label style={labelStyle}>Pengaturan harga jual</label>
-                <select
-                  name="selling_price_method"
-                  value={formData.selling_price_method}
-                  onChange={handleChange}
-                  style={inputStyle}
-                >
-                  <option value="HJ ditentukan">HJ ditentukan</option>
-                  <option value="HJ Margin % harga pokok">
-                    HJ Margin % harga pokok
-                  </option>
-                </select>
 
                 <label style={labelStyle}>Berat</label>
                 <input
@@ -460,13 +470,26 @@ const ProductForm: React.FC = () => {
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
-                  padding: "5px",
-                  backgroundColor: "#f9f9f9",
+                  padding: "10px",
+                  backgroundColor: "#f0f0f0",
                   marginBottom: "5px",
+                  borderRadius: "4px",
                 }}
               >
-                <span>{v.variant_name}</span>
-                <span>Rp {v.price}</span>
+                <span>
+                  {v.variant_name} - Rp{" "}
+                  {Number(v.price).toLocaleString("id-ID")}
+                </span>
+                <span
+                  onClick={() => handleRemoveVariant(i)}
+                  style={{
+                    color: "red",
+                    cursor: "pointer",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Hapus
+                </span>
               </div>
             ))}
             <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>

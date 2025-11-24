@@ -368,7 +368,12 @@ const ProductList: React.FC = () => {
                   >
                     Histori Jual
                   </button>
-                  <button style={actionBtnStyle}>Edit Produk</button>
+                  <button
+                    style={actionBtnStyle}
+                    onClick={() => navigate(`/produk/edit/${prod.product_id}`)}
+                  >
+                    Edit Produk
+                  </button>
                   <button
                     style={actionBtnStyle}
                     onClick={() => handleOpenHistory(prod)}

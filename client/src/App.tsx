@@ -83,6 +83,10 @@ function App() {
         path="/feature/restok"
         element={<Navigate to="/restok" replace />}
       />
+
+      <Route path="/produk" element={<ProductList />} />
+      <Route path="/produk/tambah" element={<ProductForm />} />
+      <Route path="/produk/edit/:id" element={<ProductForm />} />
     </Routes>
   );
 }
