@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "../components/MainLayout";
+import RestockHistoryModal from "../components/RestockHistoryModal";
 
 // Tipe Data Variasi
 interface Variant {
@@ -35,6 +36,16 @@ const ProductList: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [showRestockHistory, setShowRestockHistory] = useState(false);
+  const [selectedProductHistory, setSelectedProductHistory] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
+
+  const handleOpenHistory = (prod: Product) => {
+    setSelectedProductHistory({ id: prod.product_id, name: prod.product_name });
+    setShowRestockHistory(true);
+  };
 
   // FETCH DATA
   useEffect(() => {
@@ -342,7 +353,12 @@ const ProductList: React.FC = () => {
                 <div style={actionGridStyle}>
                   <button style={actionBtnStyle}>Histori Jual</button>
                   <button style={actionBtnStyle}>Edit Produk</button>
-                  <button style={actionBtnStyle}>Histori Restok</button>
+                  <button
+                    style={actionBtnStyle}
+                    onClick={() => handleOpenHistory(prod)}
+                  >
+                    Histori Restok
+                  </button>
                   <button style={actionBtnStyle}>Kelola Stok</button>
                 </div>
               </div>
@@ -389,6 +405,15 @@ const ProductList: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* === TARUH KODENYA DI SINI (SEBELUM PENUTUP MAINLAYOUT) === */}
+      {showRestockHistory && selectedProductHistory && (
+        <RestockHistoryModal
+          productId={selectedProductHistory.id}
+          productName={selectedProductHistory.name}
+          onClose={() => setShowRestockHistory(false)}
+        />
+      )}
     </MainLayout>
   );
 };

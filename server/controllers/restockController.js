@@ -52,3 +52,25 @@ exports.addStock = async (req, res) => {
     connection.release();
   }
 };
+
+// GET - Ambil Histori Restok per Produk
+exports.getRestockHistory = async (req, res) => {
+  try {
+    const { storeId } = await getStoreAndUser(req);
+    const productId = req.params.productId;
+
+    const [history] = await db.query(
+      `SELECT sm.*, u.username as pic_name
+             FROM stock_movement sm
+             LEFT JOIN users u ON sm.recorded_by_user_id = u.user_id
+             WHERE sm.store_id = ? AND sm.product_id = ? AND sm.movement_type = 'in'
+             ORDER BY sm.movement_date DESC`,
+      [storeId, productId]
+    );
+
+    res.json(history);
+  } catch (error) {
+    console.error("Error fetch restock history:", error);
+    res.status(500).json({ message: "Gagal mengambil data histori." });
+  }
+};

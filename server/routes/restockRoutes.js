@@ -6,5 +6,6 @@ const verifyToken = require("../middleware/authMiddleware");
 
 router.use(verifyToken);
 router.post("/", restockController.addStock);
+router.get("/:productId", restockController.getRestockHistory);
 
 module.exports = router;
