@@ -12,6 +12,8 @@ router.get("/", productController.getProducts);
 // Rute untuk MENAMBAH produk
 router.post("/", productController.createProduct);
 
+router.get("/:id/sales", productController.getProductSalesHistory);
+
 // (Kita tambahkan rute DELETE dan UPDATE nanti)
 // router.delete('/:id', productController.deleteProduct);
 

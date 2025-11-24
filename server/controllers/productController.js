@@ -173,3 +173,33 @@ exports.getProducts = async (req, res) => {
       .json({ message: "Gagal mengambil data produk.", error: error.message });
   }
 };
+
+// 3. GET - Ambil Histori PENJUALAN per Produk
+exports.getProductSalesHistory = async (req, res) => {
+  try {
+    const { storeId } = await getStoreAndUser(req);
+    const productId = req.params.id;
+
+    const [history] = await db.query(
+      `SELECT 
+                t.transaction_time, 
+                td.quantity, 
+                td.price_per_unit, 
+                td.total_price, 
+                u.username as cashier_name
+             FROM transaction_details td
+             JOIN transactions t ON td.transaction_id = t.transaction_id
+             LEFT JOIN users u ON t.user_id = u.user_id
+             WHERE t.store_id = ? AND td.product_id = ?
+             ORDER BY t.transaction_time DESC`,
+      [storeId, productId]
+    );
+
+    res.json(history);
+  } catch (error) {
+    console.error("Error fetch sales history:", error);
+    res
+      .status(500)
+      .json({ message: "Gagal mengambil data histori penjualan." });
+  }
+};

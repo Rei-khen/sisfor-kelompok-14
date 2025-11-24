@@ -4,6 +4,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "../components/MainLayout";
 import RestockHistoryModal from "../components/RestockHistoryModal";
+import SalesHistoryModal from "../components/SalesHistoryModal";
 
 // Tipe Data Variasi
 interface Variant {
@@ -41,10 +42,20 @@ const ProductList: React.FC = () => {
     id: number;
     name: string;
   } | null>(null);
+  const [showSalesHistory, setShowSalesHistory] = useState(false);
+  const [selectedProductSales, setSelectedProductSales] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
 
   const handleOpenHistory = (prod: Product) => {
     setSelectedProductHistory({ id: prod.product_id, name: prod.product_name });
     setShowRestockHistory(true);
+  };
+
+  const handleOpenSalesHistory = (prod: Product) => {
+    setSelectedProductSales({ id: prod.product_id, name: prod.product_name });
+    setShowSalesHistory(true);
   };
 
   // FETCH DATA
@@ -351,7 +362,12 @@ const ProductList: React.FC = () => {
                 )}
 
                 <div style={actionGridStyle}>
-                  <button style={actionBtnStyle}>Histori Jual</button>
+                  <button
+                    style={actionBtnStyle}
+                    onClick={() => handleOpenSalesHistory(prod)}
+                  >
+                    Histori Jual
+                  </button>
                   <button style={actionBtnStyle}>Edit Produk</button>
                   <button
                     style={actionBtnStyle}
@@ -412,6 +428,15 @@ const ProductList: React.FC = () => {
           productId={selectedProductHistory.id}
           productName={selectedProductHistory.name}
           onClose={() => setShowRestockHistory(false)}
+        />
+      )}
+
+      {/* Modal Histori Jual (BARU) */}
+      {showSalesHistory && selectedProductSales && (
+        <SalesHistoryModal
+          productId={selectedProductSales.id}
+          productName={selectedProductSales.name}
+          onClose={() => setShowSalesHistory(false)}
         />
       )}
     </MainLayout>
