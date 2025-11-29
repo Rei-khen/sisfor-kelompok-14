@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 const productController = require("../controllers/productController");
 const verifyToken = require("../middleware/authMiddleware");
+const upload = require("../middleware/uploadMiddleware");
 
 router.use(verifyToken); // Wajib login untuk akses semua
 
@@ -10,7 +11,7 @@ router.use(verifyToken); // Wajib login untuk akses semua
 router.get("/", productController.getProducts);
 
 // Rute untuk MENAMBAH produk
-router.post("/", productController.createProduct);
+router.post("/", upload.single("image"), productController.createProduct);
 
 router.get("/:id/sales", productController.getProductSalesHistory);
 
@@ -18,6 +19,6 @@ router.get("/:id/sales", productController.getProductSalesHistory);
 // router.delete('/:id', productController.deleteProduct);
 
 router.get("/:id", productController.getProductById); // Ambil 1 produk
-router.put("/:id", productController.updateProduct); // Simpan perubahan
+router.put("/:id", upload.single("image"), productController.updateProduct); // Simpan perubahan
 
 module.exports = router;

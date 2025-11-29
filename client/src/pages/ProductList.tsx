@@ -13,7 +13,7 @@ interface Variant {
   price: number;
 }
 
-// Tipe Data Produk (Updated)
+// Tipe Data Produk (Updated dengan image_url)
 interface Product {
   product_id: number;
   product_name: string;
@@ -22,7 +22,8 @@ interface Product {
   selling_price: number;
   current_stock: number;
   stock_management_type: string;
-  variants: Variant[]; // Array variasi harga
+  image_url: string | null; // <-- Tambahan untuk gambar
+  variants: Variant[];
 }
 
 interface Category {
@@ -49,12 +50,18 @@ const ProductList: React.FC = () => {
   } | null>(null);
 
   const handleOpenHistory = (prod: Product) => {
-    setSelectedProductHistory({ id: prod.product_id, name: prod.product_name });
+    setSelectedProductHistory({
+      id: prod.product_id,
+      name: prod.product_name,
+    });
     setShowRestockHistory(true);
   };
 
   const handleOpenSalesHistory = (prod: Product) => {
-    setSelectedProductSales({ id: prod.product_id, name: prod.product_name });
+    setSelectedProductSales({
+      id: prod.product_id,
+      name: prod.product_name,
+    });
     setShowSalesHistory(true);
   };
 
@@ -103,7 +110,6 @@ const ProductList: React.FC = () => {
   // STYLES
   const primaryColor = "#00acc1";
 
-  // ... (Style container, header, searchBar, dll sama seperti sebelumnya)
   const containerStyle: React.CSSProperties = {
     padding: "20px",
     fontFamily: "sans-serif",
@@ -194,8 +200,8 @@ const ProductList: React.FC = () => {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
     gap: "5px",
-    marginTop: "auto", // UBAH INI: 'auto' akan mendorong tombol ke paling bawah
-    paddingTop: "15px", // Tambahan: Agar tetap ada jarak minimal dengan konten di atasnya
+    marginTop: "auto",
+    paddingTop: "15px",
   };
   const actionBtnStyle: React.CSSProperties = {
     backgroundColor: primaryColor,
@@ -208,7 +214,6 @@ const ProductList: React.FC = () => {
     fontWeight: "bold",
   };
 
-  // Style khusus Dropdown Variasi (di dalam kartu)
   const variantSelectStyle: React.CSSProperties = {
     width: "100%",
     padding: "8px",
@@ -223,7 +228,7 @@ const ProductList: React.FC = () => {
   return (
     <MainLayout>
       <div style={containerStyle}>
-        {/* Header & Filter (Sama) */}
+        {/* Header & Filter */}
         <div style={headerStyle}>
           <h2 style={{ margin: 0, color: "#333" }}>Produk</h2>
           <div>
@@ -281,7 +286,10 @@ const ProductList: React.FC = () => {
                 <small style={{ color: "#666", marginBottom: "5px" }}>
                   {prod.category_name || "Umum"}
                 </small>
+
+                {/* --- BAGIAN GAMBAR & INFO --- */}
                 <div style={{ display: "flex", gap: "15px" }}>
+                  {/* Container Gambar */}
                   <div
                     style={{
                       width: "80px",
@@ -291,10 +299,25 @@ const ProductList: React.FC = () => {
                       justifyContent: "center",
                       alignItems: "center",
                       borderRadius: "6px",
+                      overflow: "hidden", // Agar gambar tidak keluar border
                     }}
                   >
-                    <span style={{ fontSize: "30px" }}>📦</span>
+                    {prod.image_url ? (
+                      <img
+                        src={`http://localhost:5000${prod.image_url}`}
+                        alt={prod.product_name}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    ) : (
+                      <span style={{ fontSize: "30px" }}>📦</span>
+                    )}
                   </div>
+
+                  {/* Info Produk */}
                   <div style={{ flexGrow: 1 }}>
                     <strong
                       style={{
@@ -347,7 +370,7 @@ const ProductList: React.FC = () => {
                   </div>
                 </div>
 
-                {/* DROPDOWN VARIASI HARGA (Hanya muncul jika produk punya variasi) */}
+                {/* Dropdown Variasi */}
                 {prod.variants && prod.variants.length > 0 && (
                   <select style={variantSelectStyle}>
                     <option value="">
@@ -361,6 +384,7 @@ const ProductList: React.FC = () => {
                   </select>
                 )}
 
+                {/* Tombol Aksi */}
                 <div style={actionGridStyle}>
                   <button
                     style={actionBtnStyle}
@@ -386,6 +410,7 @@ const ProductList: React.FC = () => {
             ))}
           </div>
         )}
+
         {!loading && filteredProducts.length === 0 && (
           <div style={{ textAlign: "center", padding: "40px", color: "#888" }}>
             Tidak ada produk.
@@ -427,7 +452,7 @@ const ProductList: React.FC = () => {
         </div>
       </div>
 
-      {/* === TARUH KODENYA DI SINI (SEBELUM PENUTUP MAINLAYOUT) === */}
+      {/* Modal Histori Restok */}
       {showRestockHistory && selectedProductHistory && (
         <RestockHistoryModal
           productId={selectedProductHistory.id}
@@ -436,7 +461,7 @@ const ProductList: React.FC = () => {
         />
       )}
 
-      {/* Modal Histori Jual (BARU) */}
+      {/* Modal Histori Jual */}
       {showSalesHistory && selectedProductSales && (
         <SalesHistoryModal
           productId={selectedProductSales.id}

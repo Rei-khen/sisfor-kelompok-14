@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const db = require("./config/db"); // Import koneksi database agar tereksekusi
+const path = require("path");
 
 dotenv.config();
 
@@ -12,6 +13,7 @@ const port = process.env.PORT || 5000;
 // Middleware
 app.use(cors()); // Agar frontend bisa akses
 app.use(express.json()); // Agar bisa baca data JSON dari request body
+app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // Middleware agar folder uploads bisa diakses publik
 
 //import routes
 const authRoutes = require("./routes/authRoutes"); // Import route

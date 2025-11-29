@@ -1,7 +1,7 @@
 // client/src/pages/ProductForm.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react"; // Tambah useRef
 import axios from "axios";
-import { useNavigate, useParams } from "react-router-dom"; // Import useParams
+import { useNavigate, useParams } from "react-router-dom";
 import MainLayout from "../components/MainLayout";
 
 interface Category {
@@ -9,14 +9,12 @@ interface Category {
   category_name: string;
 }
 
-// Interface untuk Variant
 interface Variant {
   variant_name: string;
   price: number;
 }
 
-// Interface FormData
-interface FormData {
+interface FormDataState {
   product_name: string;
   category_id: string;
   price_cost_determination: number | string;
@@ -37,12 +35,13 @@ interface FormData {
 
 const ProductForm: React.FC = () => {
   const navigate = useNavigate();
-  const { id } = useParams(); // Cek ID di URL
-  const isEditMode = !!id; // True jika sedang edit
+  const { id } = useParams();
+  const isEditMode = !!id;
 
   const [categories, setCategories] = useState<Category[]>([]);
 
-  const [formData, setFormData] = useState<FormData>({
+  // State Form
+  const [formData, setFormData] = useState<FormDataState>({
     product_name: "",
     category_id: "",
     price_cost_determination: "",
@@ -65,7 +64,12 @@ const ProductForm: React.FC = () => {
   const [variantName, setVariantName] = useState("");
   const [variantPrice, setVariantPrice] = useState(0);
 
-  // 1. Fetch Kategori (Selalu jalan)
+  // --- STATE GAMBAR BARU ---
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 1. Fetch Kategori
   useEffect(() => {
     const fetchCategories = async () => {
       const token = localStorage.getItem("token");
@@ -77,7 +81,7 @@ const ProductForm: React.FC = () => {
     fetchCategories().catch(console.error);
   }, []);
 
-  // 2. Fetch Data Produk (Hanya jika Edit Mode)
+  // 2. Fetch Data Produk (Edit Mode)
   useEffect(() => {
     if (isEditMode) {
       const fetchProduct = async () => {
@@ -91,18 +95,16 @@ const ProductForm: React.FC = () => {
           );
           const data = res.data;
 
-          // Isi state dengan data dari backend
           setFormData({
             product_name: data.product_name,
             category_id: data.category_id || "",
-            price_cost_determination: data.purchase_price, // Mapping harga pokok
+            price_cost_determination: data.purchase_price,
             price_sell: data.selling_price,
             description: data.description || "",
             barcode: data.barcode || "",
             stock_management_type: data.stock_management_type,
             purchase_price_method: "HP ditentukan",
-            // Saat edit, stok awal tidak ditampilkan/diedit di sini (karena sudah masuk sistem)
-            initial_stock: 0,
+            initial_stock: 0, // Stok tidak diedit disini
             min_stock_alert: data.min_stock_alert,
             total_purchase_price: 0,
             unit_purchase_price: 0,
@@ -113,6 +115,12 @@ const ProductForm: React.FC = () => {
           });
 
           setVariants(data.price_variants || []);
+
+          // Set preview jika ada gambar lama
+          // Asumsi backend kirim 'image_url' (perlu join di controller getProductById jika belum)
+          if (data.image_url) {
+            setImagePreview(`http://localhost:5000${data.image_url}`);
+          }
         } catch (error) {
           console.error(error);
           alert("Gagal mengambil data produk.");
@@ -123,6 +131,7 @@ const ProductForm: React.FC = () => {
     }
   }, [isEditMode, id, navigate]);
 
+  // --- HANDLER FORM ---
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -131,7 +140,6 @@ const ProductForm: React.FC = () => {
     const { name, value } = e.target;
     let newFormData = { ...formData, [name]: value };
 
-    // Logika kalkulasi otomatis (Hanya berguna saat tambah baru)
     if (
       !isEditMode &&
       (name === "initial_stock" || name === "unit_purchase_price")
@@ -150,6 +158,32 @@ const ProductForm: React.FC = () => {
     setFormData(newFormData);
   };
 
+  // --- HANDLER GAMBAR ---
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleRemoveImage = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Mencegah trigger klik container
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  // --- HANDLER VARIANT ---
   const handleAddVariant = () => {
     if (variantName && variantPrice > 0) {
       setVariants([
@@ -167,27 +201,49 @@ const ProductForm: React.FC = () => {
     setVariants(newVariants);
   };
 
+  // --- SUBMIT DENGAN FORMDATA ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem("token");
-      const payload = {
-        ...formData,
-        barcode: formData.barcode || null,
-        price_variants: variants,
+
+      // Gunakan FormData agar bisa kirim File
+      const dataToSend = new FormData();
+
+      // Append semua field text
+      Object.keys(formData).forEach((key) => {
+        dataToSend.append(key, String(formData[key as keyof FormDataState]));
+      });
+
+      // Append Variasi (sebagai JSON String)
+      dataToSend.append("price_variants", JSON.stringify(variants));
+
+      // Append File Gambar
+      if (imageFile) {
+        dataToSend.append("image", imageFile);
+      }
+
+      // Config Header Multipart
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
       };
 
       if (isEditMode) {
-        // API UPDATE
-        await axios.put(`http://localhost:5000/api/products/${id}`, payload, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await axios.put(
+          `http://localhost:5000/api/products/${id}`,
+          dataToSend,
+          config
+        );
         alert("Produk berhasil diperbarui!");
       } else {
-        // API CREATE
-        await axios.post("http://localhost:5000/api/products", payload, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await axios.post(
+          "http://localhost:5000/api/products",
+          dataToSend,
+          config
+        );
         alert("Produk berhasil ditambahkan!");
       }
 
@@ -246,7 +302,7 @@ const ProductForm: React.FC = () => {
     <MainLayout>
       <div style={pageStyle}>
         <form onSubmit={handleSubmit}>
-          {/* Header Form */}
+          {/* Header */}
           <div
             style={{
               display: "flex",
@@ -284,8 +340,8 @@ const ProductForm: React.FC = () => {
             </div>
           </div>
 
-          {/* --- Bagian Utama (Kiri) --- */}
           <div style={layoutStyle}>
+            {/* Kiri */}
             <div style={colLeftStyle}>
               <div>
                 <label style={labelStyle}>Nama produk</label>
@@ -337,7 +393,7 @@ const ProductForm: React.FC = () => {
               </div>
             </div>
 
-            {/* --- Bagian Upload (Kanan) --- */}
+            {/* Kanan - UPLOAD GAMBAR */}
             <div style={colRightStyle}>
               <label style={labelStyle}>Foto Produk (Opsional)</label>
               <div
@@ -353,19 +409,68 @@ const ProductForm: React.FC = () => {
                   color: "#888",
                   textAlign: "center",
                   padding: "10px",
+                  cursor: "pointer",
+                  overflow: "hidden",
+                  position: "relative",
                 }}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
               >
-                <span style={{ fontSize: "40px" }}>🖼️</span>
-                <p>
-                  drag foto kesini atau <strong>cari</strong>
-                </p>
+                {imagePreview ? (
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                    }}
+                  />
+                ) : (
+                  <>
+                    <span style={{ fontSize: "40px" }}>🖼️</span>
+                    <p>
+                      drag foto kesini atau <strong>cari</strong>
+                    </p>
+                  </>
+                )}
+
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  style={{ display: "none" }}
+                  accept="image/*"
+                  onChange={handleImageChange}
+                />
               </div>
+
+              {/* Tombol Hapus Gambar */}
+              {imagePreview && (
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  style={{
+                    width: "100%",
+                    marginTop: "10px",
+                    padding: "8px",
+                    backgroundColor: "#ff5252",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Hapus Foto
+                </button>
+              )}
             </div>
           </div>
 
           <hr style={dividerStyle} />
 
-          {/* --- Bagian Opsional --- */}
+          {/* Bagian Opsional */}
           <div>
             <div>
               <label style={labelStyle}>Deskripsi produk</label>
@@ -376,7 +481,6 @@ const ProductForm: React.FC = () => {
                 style={{ ...inputStyle, height: "80px", fontFamily: "inherit" }}
               />
             </div>
-
             <div
               style={{
                 display: "grid",
@@ -393,7 +497,6 @@ const ProductForm: React.FC = () => {
                   onChange={handleChange}
                   style={inputStyle}
                 />
-
                 <label style={labelStyle}>Pengaturan stok produk</label>
                 <select
                   name="stock_management_type"
@@ -404,8 +507,6 @@ const ProductForm: React.FC = () => {
                   <option value="stock_based">Manajemen Stok</option>
                   <option value="no_stock_management">Tanpa Stok (Jasa)</option>
                 </select>
-
-                {/* Stok Awal disembunyikan saat Edit karena membingungkan */}
                 {!isEditMode && (
                   <>
                     <label style={labelStyle}>Jumlah stok awal</label>
@@ -418,7 +519,6 @@ const ProductForm: React.FC = () => {
                     />
                   </>
                 )}
-
                 <label style={labelStyle}>Notifikasi limit stok</label>
                 <input
                   type="number"
@@ -428,7 +528,6 @@ const ProductForm: React.FC = () => {
                   style={inputStyle}
                 />
               </div>
-
               <div>
                 <label style={labelStyle}>Satuan</label>
                 <input
@@ -438,7 +537,6 @@ const ProductForm: React.FC = () => {
                   onChange={handleChange}
                   style={inputStyle}
                 />
-
                 <label style={labelStyle}>Berat</label>
                 <input
                   type="number"
@@ -447,7 +545,6 @@ const ProductForm: React.FC = () => {
                   onChange={handleChange}
                   style={inputStyle}
                 />
-
                 <label style={labelStyle}>SN (serial number)</label>
                 <input
                   type="text"
@@ -460,7 +557,7 @@ const ProductForm: React.FC = () => {
             </div>
           </div>
 
-          {/* --- Variasi Harga Jual --- */}
+          {/* Variasi */}
           <div>
             <hr style={dividerStyle} />
             <h3 style={{ color: "#050542" }}>Variasi harga jual</h3>

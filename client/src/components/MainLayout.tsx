@@ -181,6 +181,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         <main style={contentScrollableStyle}>{children}</main>
       </div>
     </div>
+
+    
   );
 };
 
