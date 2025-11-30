@@ -1,40 +1,59 @@
-# 📘 Dokumentasi & Panduan Setup Proyek "Kasirku"
+# 🛒 Kasirku - Aplikasi Point of Sales (POS)
 
-Proyek ini adalah aplikasi Point of Sale (POS) berbasis web yang dibangun menggunakan:
+**Kasirku** adalah aplikasi kasir berbasis web yang dirancang untuk membantu UMKM mengelola penjualan, stok produk, dan laporan keuangan dengan mudah.
+
+## 🛠️ Tech Stack
 
 - **Frontend:** React (Vite) + TypeScript
 - **Backend:** Node.js + Express
 - **Database:** MySQL
-
-## 1\. Prasyarat (Wajib Install)
-
-Pastikan di komputer sudah terinstall:
-
-1.  **Node.js** (Versi 18 atau terbaru disarankan).
-2.  **MySQL Server** (XAMPP/Laragon atau MySQL Installer).
-3.  **Git** (Untuk clone repository).
+- **Styling:** CSS (Inline / Standard)
+- **Charts:** Recharts
+- **Export:** html2canvas (Download Struk)
 
 ---
 
-## 2\. Setup Database (MySQL)
+## 📋 Prasyarat (Requirements)
 
-Langkah ini paling krusial. Temanmu harus membuat database dan tabel yang sesuai agar aplikasi tidak error.
+Sebelum memulai, pastikan di komputermu sudah terinstall:
 
-1.  Buka terminal database (atau phpMyAdmin/DBeaver).
-2.  Buat database baru bernama `kasirku_db`.
-3.  Jalankan skrip SQL lengkap di bawah ini secara berurutan:
+1.  **Node.js** (Versi 18 atau lebih baru).
+2.  **MySQL Server** (XAMPP, Laragon, atau MySQL Workbench).
+3.  **Git**.
+
+---
+
+## 🚀 Cara Menjalankan Aplikasi (Setup Guide)
+
+Ikuti langkah-langkah ini secara berurutan agar aplikasi berjalan lancar.
+
+### 1\. Setup Database
+
+Ini langkah paling penting. Pastikan struktur database sama di semua komputer tim.
+
+1.  Buka aplikasi database manager (phpMyAdmin / DBeaver / Terminal).
+2.  Buat database baru bernama **`kasirku_db`**.
+3.  Jalankan (Copy-Paste) perintah SQL berikut untuk membuat semua tabel:
 
 <!-- end list -->
 
 ```sql
--- 1. Buat Database
-CREATE DATABASE IF NOT EXISTS kasirku_db;
-USE kasirku_db;
+-- Hapus tabel lama jika ada (urutan penting karena Foreign Keys)
+DROP TABLE IF EXISTS user_permissions;
+DROP TABLE IF EXISTS transaction_details;
+DROP TABLE IF EXISTS transactions;
+DROP TABLE IF EXISTS stock_movement;
+DROP TABLE IF EXISTS product_images;
+DROP TABLE IF EXISTS product_price_variants;
+DROP TABLE IF EXISTS products;
+DROP TABLE IF EXISTS categories;
+DROP TABLE IF EXISTS stores;
+DROP TABLE IF EXISTS users;
 
--- 2. Tabel Users (Menyimpan data Owner & Karyawan)
-CREATE TABLE IF NOT EXISTS users (
+-- 1. Tabel Users
+CREATE TABLE users (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
-    store_id INT, -- Nanti direlasikan ke tabel stores
+    store_id INT,
     email VARCHAR(100) NOT NULL UNIQUE,
     username VARCHAR(50),
     password_hash VARCHAR(255) NOT NULL,
@@ -45,8 +64,8 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- 3. Tabel Stores (Data Toko)
-CREATE TABLE IF NOT EXISTS stores (
+-- 2. Tabel Stores
+CREATE TABLE stores (
     store_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL UNIQUE,
     store_name VARCHAR(50) NOT NULL UNIQUE,
@@ -59,8 +78,8 @@ CREATE TABLE IF NOT EXISTS stores (
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
--- 4. Tabel Kategori Produk
-CREATE TABLE IF NOT EXISTS categories (
+-- 3. Tabel Kategori
+CREATE TABLE categories (
     category_id INT AUTO_INCREMENT PRIMARY KEY,
     store_id INT NOT NULL,
     category_name VARCHAR(100) NOT NULL,
@@ -69,8 +88,8 @@ CREATE TABLE IF NOT EXISTS categories (
     FOREIGN KEY (store_id) REFERENCES stores(store_id) ON DELETE CASCADE
 );
 
--- 5. Tabel Produk Utama
-CREATE TABLE IF NOT EXISTS products (
+-- 4. Tabel Produk Utama
+CREATE TABLE products (
     product_id INT AUTO_INCREMENT PRIMARY KEY,
     store_id INT NOT NULL,
     category_id INT,
@@ -91,8 +110,8 @@ CREATE TABLE IF NOT EXISTS products (
     FOREIGN KEY (category_id) REFERENCES categories(category_id) ON DELETE SET NULL
 );
 
--- 6. Tabel Variasi Harga Produk
-CREATE TABLE IF NOT EXISTS product_price_variants (
+-- 5. Tabel Variasi Harga
+CREATE TABLE product_price_variants (
     variant_id INT AUTO_INCREMENT PRIMARY KEY,
     product_id INT NOT NULL,
     variant_name VARCHAR(100) NOT NULL,
@@ -100,8 +119,8 @@ CREATE TABLE IF NOT EXISTS product_price_variants (
     FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE
 );
 
--- 7. Tabel Gambar Produk
-CREATE TABLE IF NOT EXISTS product_images (
+-- 6. Tabel Gambar Produk
+CREATE TABLE product_images (
     image_id INT AUTO_INCREMENT PRIMARY KEY,
     product_id INT NOT NULL,
     image_url TEXT NOT NULL,
@@ -109,8 +128,8 @@ CREATE TABLE IF NOT EXISTS product_images (
     FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE
 );
 
--- 8. Tabel Riwayat Stok (Restok/Penjualan)
-CREATE TABLE IF NOT EXISTS stock_movement (
+-- 7. Tabel Riwayat Stok (Restok)
+CREATE TABLE stock_movement (
     movement_id INT AUTO_INCREMENT PRIMARY KEY,
     product_id INT NOT NULL,
     store_id INT NOT NULL,
@@ -125,8 +144,8 @@ CREATE TABLE IF NOT EXISTS stock_movement (
     FOREIGN KEY (recorded_by_user_id) REFERENCES users(user_id) ON DELETE SET NULL
 );
 
--- 9. Tabel Transaksi (Header)
-CREATE TABLE IF NOT EXISTS transactions (
+-- 8. Tabel Transaksi (Header)
+CREATE TABLE transactions (
     transaction_id INT AUTO_INCREMENT PRIMARY KEY,
     store_id INT NOT NULL,
     user_id INT NOT NULL,
@@ -140,8 +159,8 @@ CREATE TABLE IF NOT EXISTS transactions (
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
--- 10. Tabel Detail Transaksi (Items)
-CREATE TABLE IF NOT EXISTS transaction_details (
+-- 9. Tabel Detail Transaksi (Items)
+CREATE TABLE transaction_details (
     detail_id INT AUTO_INCREMENT PRIMARY KEY,
     transaction_id INT NOT NULL,
     product_id INT NOT NULL,
@@ -152,8 +171,8 @@ CREATE TABLE IF NOT EXISTS transaction_details (
     FOREIGN KEY (product_id) REFERENCES products(product_id)
 );
 
--- 11. Tabel Hak Akses Karyawan
-CREATE TABLE IF NOT EXISTS user_permissions (
+-- 10. Tabel Hak Akses Karyawan
+CREATE TABLE user_permissions (
     permission_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     feature_name VARCHAR(50) NOT NULL,
@@ -164,9 +183,9 @@ CREATE TABLE IF NOT EXISTS user_permissions (
 
 ---
 
-## 3\. Setup Backend (Server)
+### 2\. Setup Backend (Server)
 
-1.  Buka terminal, masuk ke folder `server`:
+1.  Buka terminal, masuk ke folder server:
     ```bash
     cd server
     ```
@@ -174,27 +193,29 @@ CREATE TABLE IF NOT EXISTS user_permissions (
     ```bash
     npm install
     ```
-3.  Buat file `.env` di dalam folder `server` dan isi konfigurasi berikut (sesuaikan password database jika ada):
+3.  **PENTING:** Buat file **`.env`** di dalam folder `server`, lalu isi:
     ```env
     PORT=5000
     DB_HOST=localhost
     DB_USER=root
-    DB_PASSWORD=
+    DB_PASSWORD=          <-- Isi jika MySQL kamu pakai password
     DB_NAME=kasirku_db
-    JWT_SECRET=rahasia_kunci_jwt_ganti_dengan_yang_rumit
+    JWT_SECRET=rahasia_kasirku_123
     ```
-4.  Pastikan folder `uploads` sudah ada di dalam `server`. Jika belum, buat folder kosong bernama `uploads`.
+4.  Pastikan ada folder bernama **`uploads`** di dalam folder `server`. Jika belum ada, buat folder baru:
+    ```bash
+    mkdir uploads
+    ```
 5.  Jalankan server:
     ```bash
     npm run dev
     ```
-    _Indikator sukses: Terminal menampilkan "Server berjalan di http://localhost:5000" dan "Berhasil terhubung ke database MySQL\!"._
 
 ---
 
-## 4\. Setup Frontend (Client)
+### 3\. Setup Frontend (Client)
 
-1.  Buka terminal baru (jangan matikan terminal server), masuk ke folder `client`:
+1.  Buka terminal baru, masuk ke folder client:
     ```bash
     cd client
     ```
@@ -206,31 +227,34 @@ CREATE TABLE IF NOT EXISTS user_permissions (
     ```bash
     npm run dev
     ```
-4.  Buka link yang muncul (biasanya `http://localhost:5173`) di browser.
+4.  Akses aplikasi di browser: **`http://localhost:5173`**
 
 ---
 
-## 5\. Alur Penggunaan Saat Ini
+## 💡 Panduan Penggunaan Singkat
 
-Untuk teman-temanmu yang baru bergabung, berikut alur aplikasi saat ini:
+1.  **Registrasi:** Saat pertama kali buka, masuk ke menu **Register**. Gunakan **Email** dan Password.
+2.  **Setup Toko:** Setelah login, kamu akan diminta mengisi Nama Toko dan Alamat.
+3.  **Kategori:** Pergi ke menu Kategori, buat minimal satu kategori (misal: "Makanan").
+4.  **Produk:**
+    - Menu **Produk** -\> **Tambah Produk**.
+    - Isi data wajib (Nama, Harga Jual).
+    - Bisa upload gambar (Drag & Drop).
+    - Bisa tambah variasi harga.
+5.  **Restok:** Jika stok habis, masuk ke menu **Restok**, cari barangnya, dan tambah jumlahnya.
+6.  **Penjualan (Kasir):**
+    - Masuk ke menu **Penjualan**.
+    - Cari produk, klik tombol keranjang 🛒.
+    - Klik tombol **Pembayaran**.
+    - Pilih Tunai/Non-Tunai -\> Bayar.
+7.  **Laporan:**
+    - **Histori:** Lihat riwayat transaksi, filter tanggal/metode bayar, lihat detail, print/download struk.
+    - **Grafik:** Lihat analisa penjualan harian dan produk terlaris.
+8.  **Karyawan:** Tambah akun kasir baru dan atur fitur apa saja yang boleh mereka akses.
 
-1.  **Register:** Buat akun baru (email & password).
-2.  **Setup Toko:** Setelah register, wajib isi nama toko & alamat.
-3.  **Dashboard:** Halaman utama dengan menu navigasi.
-4.  **Kategori:** Buat kategori produk dulu (misal: Makanan, Minuman).
-5.  **Produk:** Tambah produk baru (bisa upload gambar, atur stok, harga, variasi).
-6.  **Restok:** Tambah stok produk yang sudah ada.
-7.  **Penjualan (Kasir):** Masukkan barang ke keranjang -\> Bayar (Tunai/Non-Tunai).
-8.  **Histori:** Lihat riwayat transaksi, detail item, dan cetak struk.
-9.  **Grafik:** Lihat analisis penjualan harian/mingguan.
-10. **Karyawan:** Tambah akun karyawan baru dan atur hak akses mereka.
+---
 
-## 6\. Catatan Teknis untuk Developer
+## ⚠️ Troubleshooting
 
-- **Library Utama:**
-  - Backend: `express`, `mysql2` (raw queries), `multer` (upload), `jsonwebtoken` (auth).
-  - Frontend: `react-router-dom`, `axios`, `recharts` (grafik), `html2canvas` (download struk).
-- **Struktur Kode:**
-  - Frontend menggunakan **Context API** (`CartContext`) untuk manajemen keranjang belanja global.
-  - Halaman dibungkus oleh komponen `MainLayout` agar sidebar & header konsisten.
-  - Backend menggunakan arsitektur MVC sederhana (Routes -\> Controllers -\> Database).
+- **Gambar Produk Tidak Muncul:** Pastikan folder `server/uploads` ada.
+- **Grafik Tidak Muncul:** Coba tambahkan minimal satu transaksi penjualan agar ada datanya.
