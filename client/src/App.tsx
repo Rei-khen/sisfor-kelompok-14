@@ -20,6 +20,7 @@ import TransactionDetail from "./pages/TransactionDetail";
 import RestockPage from "./pages/RestockPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import Jurnal from "./pages/Jurnal";
+import GudangPage from "./pages/GudangPage";  
 
 function App() {
   return (
@@ -35,6 +36,13 @@ function App() {
       <Route path="/kategori" element={<CategoryList />} />
       <Route path="/kategori/tambah" element={<CategoryForm />} />
       <Route path="/kategori/edit/:id" element={<CategoryForm />} />
+
+      {/* --- BAGIAN GUDANG --- */}
+      <Route path="/gudang" element={<GudangPage />} />
+      <Route
+        path="/feature/gudang"
+        element={<Navigate to="/gudang" replace />}
+      />
 
       {/* --- BAGIAN PRODUK --- */}
       <Route path="/produk" element={<ProductList />} />

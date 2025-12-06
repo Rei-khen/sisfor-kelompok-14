@@ -27,7 +27,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   const sidebarStyle: React.CSSProperties = {
     width: "250px",
-    backgroundColor: "#050542",
+    backgroundColor: "#050E3C",
     color: "white",
     display: "flex",
     flexDirection: "column",

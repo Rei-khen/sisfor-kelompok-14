@@ -35,17 +35,16 @@ const TransactionHistory: React.FC = () => {
   const [showReceipt, setShowReceipt] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
 
-  // 1. Load Karyawan (Sekali saja saat awal)
+  // 1. Load Karyawan
   useEffect(() => {
     fetchEmployees();
   }, []);
 
-  // 2. Load History (Otomatis setiap kali filter berubah)
+  // 2. Load History
   useEffect(() => {
-    // Kita gunakan timeout kecil (debounce) untuk search agar tidak request setiap ketikan huruf
     const delayDebounceFn = setTimeout(() => {
       fetchHistory();
-    }, 500); // Tunggu 0.5 detik setelah user berhenti mengetik/memilih
+    }, 500); 
 
     return () => clearTimeout(delayDebounceFn);
   }, [filterDate, searchTerm, filterPayment, filterCashier]);
@@ -87,13 +86,11 @@ const TransactionHistory: React.FC = () => {
     }
   };
 
-  // Fungsi Reset Filter
   const resetFilter = () => {
     setFilterDate("");
     setSearchTerm("");
     setFilterPayment("");
     setFilterCashier("");
-    // Karena state berubah, useEffect di atas akan otomatis jalan dan fetch data awal
   };
 
   const handleShowReceipt = async (id: number) => {
@@ -126,17 +123,21 @@ const TransactionHistory: React.FC = () => {
       .replace(",", "");
   };
 
-  // Styles
-  const inputStyle = {
+  // Styles (HANYA INI YANG DIMODIFIKASI UNTUK WARNA)
+  const inputStyle: React.CSSProperties = {
     padding: "10px",
     border: "1px solid #ccc",
     borderRadius: "4px",
     outline: "none",
+    color: "#333", // Tambahan: Teks Hitam
+    backgroundColor: "white", // Tambahan: Background Putih
   };
+  
   const selectStyle = { ...inputStyle, flex: 1 };
 
   return (
     <MainLayout>
+      {/* Container Utama: Paksa warna #333 agar semua teks child jadi hitam */}
       <div style={{ padding: "20px", fontFamily: "sans-serif", color: "#333" }}>
         <h2 style={{ marginTop: 0, marginBottom: "20px", color: "#555" }}>
           HISTORI PENJUALAN
@@ -186,7 +187,7 @@ const TransactionHistory: React.FC = () => {
           }}
         >
           <div style={{ display: "flex", gap: "10px" }}>
-            {/* Tombol Reset (Refresh Icon) */}
+            {/* Tombol Reset */}
             <button
               onClick={resetFilter}
               style={{
@@ -196,6 +197,7 @@ const TransactionHistory: React.FC = () => {
                 cursor: "pointer",
                 backgroundColor: "#e0e0e0",
                 fontSize: "16px",
+                color: "#333" // Pastikan icon terlihat
               }}
               title="Reset Filter"
             >
@@ -206,7 +208,7 @@ const TransactionHistory: React.FC = () => {
               type="date"
               value={filterDate}
               onChange={(e) => setFilterDate(e.target.value)}
-              style={inputStyle}
+              style={inputStyle} // Menggunakan style baru
             />
 
             <input
@@ -214,7 +216,7 @@ const TransactionHistory: React.FC = () => {
               placeholder="Cari struk (contoh: SR1)"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ flexGrow: 1, ...inputStyle }}
+              style={{ flexGrow: 1, ...inputStyle }} // Menggunakan style baru
             />
           </div>
 
@@ -222,7 +224,7 @@ const TransactionHistory: React.FC = () => {
             <select
               value={filterPayment}
               onChange={(e) => setFilterPayment(e.target.value)}
-              style={selectStyle}
+              style={selectStyle} // Menggunakan style baru
             >
               <option value="">Semua Metode Bayar</option>
               <option value="tunai">Tunai</option>
@@ -232,7 +234,7 @@ const TransactionHistory: React.FC = () => {
             <select
               value={filterCashier}
               onChange={(e) => setFilterCashier(e.target.value)}
-              style={selectStyle}
+              style={selectStyle} // Menggunakan style baru
             >
               <option value="">Semua Kasir</option>
               {employees.map((emp) => (
@@ -242,13 +244,11 @@ const TransactionHistory: React.FC = () => {
               ))}
             </select>
           </div>
-
-          {/* Tombol "Terapkan Filter" SUDAH DIHAPUS karena otomatis */}
         </div>
 
         {/* LIST DATA */}
         {loading ? (
-          <p style={{ textAlign: "center" }}>Memuat data...</p>
+          <p style={{ textAlign: "center", color: "#666" }}>Memuat data...</p>
         ) : transactions.length === 0 ? (
           <p style={{ textAlign: "center", color: "#888", marginTop: "20px" }}>
             Tidak ada data transaksi yang cocok.
@@ -268,6 +268,7 @@ const TransactionHistory: React.FC = () => {
                 justifyContent: "space-between",
                 alignItems: "center",
                 boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                color: "#333" // Pastikan teks di dalam kartu hitam
               }}
             >
               <div>
@@ -279,7 +280,7 @@ const TransactionHistory: React.FC = () => {
                 >
                   {formatDate(t.transaction_time)}
                 </div>
-                <div style={{ fontSize: "14px" }}>
+                <div style={{ fontSize: "14px", color: "#333" }}>
                   Total:{" "}
                   <strong>Rp {t.total_price.toLocaleString("id-ID")}</strong>
                 </div>
@@ -357,7 +358,7 @@ const TransactionHistory: React.FC = () => {
                       fontSize: "18px",
                     }}
                   >
-                    🖼️
+                    📄
                   </button>
                 </div>
               </div>

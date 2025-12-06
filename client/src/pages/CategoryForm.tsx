@@ -1,4 +1,3 @@
-// client/src/pages/CategoryForm.tsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
@@ -6,14 +5,13 @@ import MainLayout from "../components/MainLayout";
 
 const CategoryForm: React.FC = () => {
   const navigate = useNavigate();
-  const { id } = useParams(); // Ambil ID dari URL jika ada (mode edit)
+  const { id } = useParams(); 
   const isEditMode = !!id;
 
   const [name, setName] = useState("");
   const [type, setType] = useState("Umum");
   const [loading, setLoading] = useState(false);
 
-  // Jika mode edit, ambil data kategori yang mau diedit
   useEffect(() => {
     if (isEditMode) {
       const fetchCategory = async () => {
@@ -82,32 +80,65 @@ const CategoryForm: React.FC = () => {
     }
   };
 
-  // Styles
-  const labelStyle = {
+  // --- STYLES (DIPERBAIKI) ---
+  const fontStyle = { fontFamily: "'Montserrat', sans-serif" };
+
+  const containerStyle: React.CSSProperties = {
+    padding: "20px",
+    maxWidth: "600px",
+    margin: "0 auto",
+    color: "#333", // PERBAIKAN: Text color utama hitam
+    ...fontStyle
+  };
+
+  const labelStyle: React.CSSProperties = {
     display: "block",
     marginBottom: "8px",
     fontWeight: "bold",
-    color: "#333",
+    color: "#333", // PERBAIKAN: Label hitam
+    ...fontStyle
   };
-  const inputStyle = {
+
+  const inputStyle: React.CSSProperties = {
     width: "100%",
     padding: "10px",
     marginBottom: "20px",
     borderRadius: "4px",
     border: "1px solid #ccc",
+    backgroundColor: "white", // Background input putih
+    color: "#333", // PERBAIKAN: Teks input hitam
+    outline: "none",
+    ...fontStyle
+  };
+
+  const btnStyle: React.CSSProperties = {
+    flexGrow: 1,
+    padding: "12px",
+    backgroundColor: "#0277bd",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    fontSize: "16px",
+    fontWeight: "bold",
+    cursor: "pointer",
+    ...fontStyle
+  };
+
+  const deleteBtnStyle: React.CSSProperties = {
+    backgroundColor: "#00acc1",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    width: "50px",
+    fontSize: "20px",
+    cursor: "pointer",
+    display: "flex", justifyContent: "center", alignItems: "center"
   };
 
   return (
     <MainLayout>
-      <div
-        style={{
-          padding: "20px",
-          fontFamily: "sans-serif",
-          maxWidth: "600px",
-          margin: "0 auto",
-        }}
-      >
-        <h2 style={{ color: "#333", marginBottom: "30px" }}>
+      <div style={containerStyle}>
+        <h2 style={{ color: "#050542", marginBottom: "30px", fontWeight: "bold" }}>
           {isEditMode ? "EDIT KATEGORI PRODUK" : "TAMBAH KATEGORI PRODUK"}
         </h2>
 
@@ -120,6 +151,7 @@ const CategoryForm: React.FC = () => {
               onChange={(e) => setName(e.target.value)}
               required
               style={inputStyle}
+              placeholder="Contoh: Makanan Ringan"
             />
           </div>
 
@@ -128,7 +160,7 @@ const CategoryForm: React.FC = () => {
             <select
               value={type}
               onChange={(e) => setType(e.target.value)}
-              style={{ ...inputStyle, backgroundColor: "white" }}
+              style={{ ...inputStyle, cursor: "pointer" }}
             >
               <option value="Umum">Umum</option>
               <option value="Saldo">Saldo</option>
@@ -136,20 +168,13 @@ const CategoryForm: React.FC = () => {
           </div>
 
           <div style={{ display: "flex", gap: "10px", marginTop: "30px" }}>
-            {/* Tombol Delete hanya muncul saat Edit Mode */}
+            {/* Tombol Delete */}
             {isEditMode && (
               <button
                 type="button"
                 onClick={handleDelete}
-                style={{
-                  backgroundColor: "#00acc1",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  width: "50px",
-                  fontSize: "20px",
-                  cursor: "pointer",
-                }}
+                style={deleteBtnStyle}
+                title="Hapus Kategori"
               >
                 🗑️
               </button>
@@ -158,19 +183,9 @@ const CategoryForm: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              style={{
-                flexGrow: 1,
-                padding: "12px",
-                backgroundColor: "#0277bd",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                fontSize: "16px",
-                fontWeight: "bold",
-                cursor: "pointer",
-              }}
+              style={btnStyle}
             >
-              {loading ? "Menyimpan..." : "simpan"}
+              {loading ? "Menyimpan..." : "SIMPAN"}
             </button>
           </div>
         </form>
