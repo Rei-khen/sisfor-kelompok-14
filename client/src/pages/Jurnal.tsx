@@ -1,34 +1,120 @@
+// client/src/pages/Jurnal.tsx
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import MainLayout from "../components/MainLayout";
 
-interface Transaction {
-  id: number;
+// Interface sesuai response API
+interface JournalItem {
+  transaction_id: number;
   date: string;
-  status: string; 
-  kasir: string;
-  hargaPokok: number;
-  hargaJual: number;
-  laba: number;
+  cashier: string;
+  status: string; // Tunai / Non-Tunai
+  profit: number;
+}
+
+interface Summary {
+  total_cogs: number;
+  total_revenue: number;
+  total_profit: number;
+}
+
+interface Employee {
+  user_id: number;
+  username: string;
 }
 
 const Jurnal: React.FC = () => {
+  // State Filter
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [statusFilter, setStatusFilter] = useState("Semua Status");
-  const [kasirFilter, setKasirFilter] = useState("Semua Kasir");
+  const [statusFilter, setStatusFilter] = useState(""); // Tunai/Non-Tunai
+  const [kasirFilter, setKasirFilter] = useState(""); // ID Kasir
 
-  const [data, setData] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [summary, setSummary] = useState({
-    totalHargaPokok: 0,
-    totalHargaJual: 0,
-    totalLaba: 0,
-    totalData: 0,
+  // State Data
+  const [data, setData] = useState<JournalItem[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [summary, setSummary] = useState<Summary>({
+    total_cogs: 0,
+    total_revenue: 0,
+    total_profit: 0,
   });
+  const [loading, setLoading] = useState(false);
 
+  // Pagination Client-Side (karena API mengirim semua data sekaligus)
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  const [totalItems, setTotalItems] = useState(0);
+
+  // 1. Fetch Karyawan (untuk Dropdown)
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get("http://localhost:5000/api/employees", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setEmployees(res.data);
+      } catch (e) {
+        console.error("Gagal load karyawan", e);
+      }
+    };
+    fetchEmployees();
+  }, []);
+
+  // 2. Fetch Data Jurnal (Setiap filter berubah)
+  useEffect(() => {
+    fetchTransactions();
+    setCurrentPage(1); // Reset ke halaman 1 saat filter berubah
+  }, [startDate, endDate, statusFilter, kasirFilter]);
+
+  const fetchTransactions = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const params = new URLSearchParams();
+
+      if (startDate) params.append("startDate", startDate);
+      if (endDate) params.append("endDate", endDate);
+      if (statusFilter) params.append("paymentMethod", statusFilter); // API mengharapkan 'paymentMethod'
+      if (kasirFilter) params.append("cashierId", kasirFilter);
+
+      const res = await axios.get(
+        `http://localhost:5000/api/journal?${params.toString()}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      setData(res.data.data);
+      setSummary(res.data.summary);
+    } catch (error) {
+      console.error("Error fetching journal:", error);
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRefresh = () => {
+    setStartDate("");
+    setEndDate("");
+    setStatusFilter("");
+    setKasirFilter("");
+    fetchTransactions();
+  };
+
+  // Helper Pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = data.slice(indexOfFirstItem, indexOfLastItem);
+  const totalItems = data.length;
+
+  const handleNext = () => {
+    if (indexOfLastItem < totalItems) setCurrentPage((prev) => prev + 1);
+  };
+
+  const handlePrev = () => {
+    if (currentPage > 1) setCurrentPage((prev) => prev - 1);
+  };
 
   const formatRupiah = (num: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -38,89 +124,23 @@ const Jurnal: React.FC = () => {
     }).format(num);
   };
 
-  const fetchTransactions = async (page: number) => {
-    setLoading(true);
-
-    setTimeout(() => {
-
-      const allDummyData: Transaction[] = Array.from({ length: 55 }, (_, i) => ({
-        id: i + 1,
-        date: "2025-10-05", 
-        status: i % 3 === 0 ? "Hutang" : "Lunas",
-        kasir: i % 2 === 0 ? "Pemilik" : "Karyawan A",
-        hargaPokok: 10000,
-        hargaJual: 15000,
-        laba: 5000,
-      }));
-
-      let filtered = allDummyData.filter((item) => {
-        if (statusFilter !== "Semua Status" && item.status !== statusFilter) return false;
-        if (kasirFilter !== "Semua Kasir" && item.kasir !== kasirFilter) return false;
-        
-        return true; 
-      });
-
-      const totalCount = filtered.length;
-      setTotalItems(totalCount);
-
-      if (totalCount > 0) {
-        const totalPokok = filtered.reduce((acc, curr) => acc + curr.hargaPokok, 0);
-        const totalJual = filtered.reduce((acc, curr) => acc + curr.hargaJual, 0);
-        const totalLaba = filtered.reduce((acc, curr) => acc + curr.laba, 0);
-
-        setSummary({
-          totalHargaPokok: totalPokok,
-          totalHargaJual: totalJual,
-          totalLaba: totalLaba,
-          totalData: totalCount,
-        });
-
-        const startIndex = (page - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        setData(filtered.slice(startIndex, endIndex));
-      } else {
-        setData([]);
-        setSummary({ totalHargaPokok: 0, totalHargaJual: 0, totalLaba: 0, totalData: 0 });
-      }
-      setLoading(false);
-    }, 500); 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("id-ID", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
   };
 
-
-  useEffect(() => {
-    fetchTransactions(1);
-  }, [statusFilter, kasirFilter]); 
-
-  const handleRefresh = () => {
-    setCurrentPage(1); 
-    fetchTransactions(1);
-  };
-
-  const handleNext = () => {
-    if (currentPage * itemsPerPage < totalItems) {
-      const nextPage = currentPage + 1;
-      setCurrentPage(nextPage);
-      fetchTransactions(nextPage);
-    }
-  };
-
-  const handlePrev = () => {
-    if (currentPage > 1) {
-      const prevPage = currentPage - 1;
-      setCurrentPage(prevPage);
-      fetchTransactions(prevPage);
-    }
-  };
-
-  // --- STYLES ---
+  // --- STYLES (Sama seperti kodemu) ---
   const containerStyle: React.CSSProperties = {
     padding: "30px",
     fontFamily: "sans-serif",
     display: "flex",
     flexDirection: "column",
     height: "100%",
-    backgroundColor: "#FFFFFF", 
-    color: "#333", 
+    backgroundColor: "#FFFFFF",
+    color: "#333",
     boxSizing: "border-box",
   };
 
@@ -149,7 +169,7 @@ const Jurnal: React.FC = () => {
     justifyContent: "center",
     alignItems: "center",
     cursor: "pointer",
-    fontSize: "24px", 
+    fontSize: "24px",
     lineHeight: 0,
     padding: 0,
     boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
@@ -201,8 +221,8 @@ const Jurnal: React.FC = () => {
 
   const contentAreaStyle: React.CSSProperties = {
     flexGrow: 1,
-    borderTop: "1px solid #e0e0e0", 
-    borderBottom: "1px solid #e0e0e0", 
+    borderTop: "1px solid #e0e0e0",
+    borderBottom: "1px solid #e0e0e0",
     display: "flex",
     flexDirection: "column",
     justifyContent: data.length > 0 ? "flex-start" : "center",
@@ -241,49 +261,51 @@ const Jurnal: React.FC = () => {
 
         {/* --- ROW 1: REFRESH + DATES --- */}
         <div style={filterRow1Style}>
-          <button 
-            style={refreshBtnStyle} 
-            onClick={handleRefresh} 
-            title="Refresh Data"
+          <button
+            style={refreshBtnStyle}
+            onClick={handleRefresh}
+            title="Reset Filter"
           >
             🔄
           </button>
-          
-          <input 
-            type="date" 
-            style={dateInputStyle} 
-            value={startDate} 
-            onChange={(e) => setStartDate(e.target.value)} 
+
+          <input
+            type="date"
+            style={dateInputStyle}
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
           />
-          <input 
-            type="date" 
-            style={dateInputStyle} 
-            value={endDate} 
-            onChange={(e) => setEndDate(e.target.value)} 
+          <input
+            type="date"
+            style={dateInputStyle}
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
           />
         </div>
 
         {/* --- ROW 2: DROPDOWNS --- */}
         <div style={filterRow2Style}>
-          {/* LOGIKA: Saat diubah, state berubah -> useEffect terpanggil -> Data terefresh otomatis */}
-          <select 
-            style={selectStyle} 
-            value={statusFilter} 
+          <select
+            style={selectStyle}
+            value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            <option>Semua Status</option>
-            <option value="Lunas">Lunas</option>
-            <option value="Hutang">Hutang</option>
+            <option value="">Semua Status</option>
+            <option value="tunai">Tunai</option>
+            <option value="non-tunai">Non-Tunai</option>
           </select>
 
-          <select 
-            style={selectStyle} 
-            value={kasirFilter} 
+          <select
+            style={selectStyle}
+            value={kasirFilter}
             onChange={(e) => setKasirFilter(e.target.value)}
           >
-            <option>Semua Kasir</option>
-            <option value="Pemilik">Pemilik</option>
-            <option value="Karyawan A">Karyawan A</option>
+            <option value="">Semua Kasir</option>
+            {employees.map((emp) => (
+              <option key={emp.user_id} value={emp.user_id}>
+                {emp.username}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -291,15 +313,26 @@ const Jurnal: React.FC = () => {
         <div style={summaryRowStyle}>
           <div style={summaryItemStyle}>
             <span>Harga pokok</span>
-            <span style={{fontWeight: "bold", color: "#000"}}>{formatRupiah(summary.totalHargaPokok)}</span>
+            <span style={{ fontWeight: "bold", color: "#000" }}>
+              {formatRupiah(summary.total_cogs)}
+            </span>
           </div>
           <div style={summaryItemStyle}>
             <span>Harga jual</span>
-            <span style={{fontWeight: "bold", color: "#000"}}>{formatRupiah(summary.totalHargaJual)}</span>
+            <span style={{ fontWeight: "bold", color: "#000" }}>
+              {formatRupiah(summary.total_revenue)}
+            </span>
           </div>
-          <div style={{...summaryItemStyle, textAlign: "right"}}>
+          <div style={{ ...summaryItemStyle, textAlign: "right" }}>
             <span>Laba</span>
-            <span style={{fontWeight: "bold", color: "#000"}}>{formatRupiah(summary.totalLaba)}</span>
+            <span
+              style={{
+                fontWeight: "bold",
+                color: summary.total_profit >= 0 ? "#2e7d32" : "red",
+              }}
+            >
+              {formatRupiah(summary.total_profit)}
+            </span>
           </div>
         </div>
 
@@ -309,54 +342,94 @@ const Jurnal: React.FC = () => {
             <p>Memuat data...</p>
           ) : data.length > 0 ? (
             <div style={{ width: "100%", fontSize: "14px" }}>
-               {/* Header Tabel */}
-               <div style={{display:'flex', fontWeight:'bold', padding:'10px 5px', borderBottom:'2px solid #eee', color: '#000'}}>
-                 <div style={{flex:1}}>Tanggal</div>
-                 <div style={{flex:1}}>Kasir</div>
-                 <div style={{flex:1}}>Status</div>
-                 <div style={{flex:1, textAlign:'right'}}>Laba</div>
-               </div>
-               {/* Body Tabel */}
-               {data.map((item) => (
-                 <div key={item.id} style={{display:'flex', padding:'10px 5px', borderBottom:'1px solid #eee', color: '#333'}}>
-                   <div style={{flex:1}}>{item.date}</div>
-                   <div style={{flex:1}}>{item.kasir}</div>
-                   <div style={{flex:1}}>{item.status}</div>
-                   <div style={{flex:1, textAlign:'right'}}>{formatRupiah(item.laba)}</div>
-                 </div>
-               ))}
+              {/* Header Tabel */}
+              <div
+                style={{
+                  display: "flex",
+                  fontWeight: "bold",
+                  padding: "10px 5px",
+                  borderBottom: "2px solid #eee",
+                  color: "#000",
+                }}
+              >
+                <div style={{ flex: 1 }}>Tanggal</div>
+                <div style={{ flex: 1 }}>Kasir</div>
+                <div style={{ flex: 1 }}>Status</div>
+                <div style={{ flex: 1, textAlign: "right" }}>Laba</div>
+              </div>
+              {/* Body Tabel */}
+              {currentItems.map((item) => (
+                <div
+                  key={item.transaction_id}
+                  style={{
+                    display: "flex",
+                    padding: "10px 5px",
+                    borderBottom: "1px solid #eee",
+                    color: "#333",
+                  }}
+                >
+                  <div style={{ flex: 1 }}>{formatDate(item.date)}</div>
+                  <div style={{ flex: 1 }}>{item.cashier || "-"}</div>
+                  <div style={{ flex: 1 }}>
+                    <span
+                      style={{
+                        padding: "4px 8px",
+                        borderRadius: "4px",
+                        fontSize: "12px",
+                        backgroundColor:
+                          item.status === "Tunai" ? "#e8f5e9" : "#e3f2fd",
+                        color: item.status === "Tunai" ? "#2e7d32" : "#1565c0",
+                      }}
+                    >
+                      {item.status}
+                    </span>
+                  </div>
+                  <div style={{ flex: 1, textAlign: "right" }}>
+                    {formatRupiah(item.profit)}
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
-            <p style={{ marginTop: "0", color: "#888" }}>Tidak ditemukan data</p>
+            <p style={{ marginTop: "0", color: "#888" }}>
+              Tidak ditemukan data
+            </p>
           )}
         </div>
 
         {/* --- FOOTER PAGINATION --- */}
         <div style={footerStyle}>
-          <button 
-            style={{...navButtonStyle, opacity: currentPage === 1 ? 0.5 : 1}} 
-            onClick={handlePrev} 
+          <button
+            style={{
+              ...navButtonStyle,
+              opacity: currentPage === 1 ? 0.5 : 1,
+            }}
+            onClick={handlePrev}
             disabled={currentPage === 1}
           >
             PREV
           </button>
-          
-          <div style={{flexGrow: 1, textAlign: "center", color: "#555"}}>
-            {data.length === 0 
-              ? "0 sd 0 dr 0 data" 
-              : `${(currentPage - 1) * itemsPerPage + 1} sd ${Math.min(currentPage * itemsPerPage, totalItems)} dr ${totalItems} data`
-            }
+
+          <div style={{ flexGrow: 1, textAlign: "center", color: "#555" }}>
+            {data.length === 0
+              ? "0 sd 0 dr 0 data"
+              : `${indexOfFirstItem + 1} sd ${Math.min(
+                  indexOfLastItem,
+                  totalItems
+                )} dr ${totalItems} data`}
           </div>
 
-          <button 
-            style={{...navButtonStyle, opacity: currentPage * itemsPerPage >= totalItems ? 0.5 : 1}} 
-            onClick={handleNext} 
-            disabled={currentPage * itemsPerPage >= totalItems}
+          <button
+            style={{
+              ...navButtonStyle,
+              opacity: indexOfLastItem >= totalItems ? 0.5 : 1,
+            }}
+            onClick={handleNext}
+            disabled={indexOfLastItem >= totalItems}
           >
             NEXT
           </button>
         </div>
-
       </div>
     </MainLayout>
   );
