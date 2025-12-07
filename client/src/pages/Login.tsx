@@ -188,6 +188,13 @@ const Login: React.FC = () => {
             Daftar sekarang
           </Link>
         </p>
+        
+        {/* --- TAMBAHAN LINK KE LOGIN KARYAWAN --- */}
+        <div style={{ marginTop: "15px", textAlign: "center", paddingTop: "15px", borderTop: "1px solid #eee" }}>
+            <Link to="/login-karyawan" style={{ color: "#00acc1", fontWeight: "bold", textDecoration: "none", fontSize: "14px" }}>
+                → Masuk sebagai Karyawan
+            </Link>
+        </div>
       </div>
     </div>
   );

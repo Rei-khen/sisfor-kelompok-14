@@ -20,6 +20,7 @@ import TransactionDetail from "./pages/TransactionDetail";
 import RestockPage from "./pages/RestockPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import Jurnal from "./pages/Jurnal";
+import LoginKaryawan from "./pages/LoginKaryawan"; // <--- Import ini
 
 function App() {
   return (
@@ -71,6 +72,18 @@ function App() {
         path="/feature/karyawan"
         element={<Navigate to="/karyawan" replace />}
       />
+
+      {/* --- ROUTE LOGIN KARYAWAN --- */}
+      <Route path="/login-karyawan" element={<LoginKaryawan />} />
+
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/create-store" element={<SetupPage />} />
+      
+      <Route path="/feature/:menuName" element={<Placeholder />} />
+
+      <Route path="/kategori" element={<CategoryList />} />
+      <Route path="/kategori/tambah" element={<CategoryForm />} />
+      <Route path="/kategori/edit/:id" element={<CategoryForm />} />
 
       {/* --- BAGIAN HISTORI --- */}
       <Route path="/histori-penjualan" element={<TransactionHistory />} />
