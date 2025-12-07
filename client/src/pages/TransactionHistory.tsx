@@ -53,9 +53,13 @@ const TransactionHistory: React.FC = () => {
   const fetchEmployees = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5000/api/employees", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // TAMBAHKAN query param ?type=all di sini juga
+      const res = await axios.get(
+        "http://localhost:5000/api/employees?type=all",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       setEmployees(res.data);
     } catch (error) {
       console.error("Gagal load karyawan", error);

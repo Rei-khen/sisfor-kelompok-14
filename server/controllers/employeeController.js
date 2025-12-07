@@ -2,29 +2,65 @@
 const db = require("../config/db");
 const bcrypt = require("bcryptjs");
 
-// Helper
+// --- HELPER: Ambil Store ID (Support Owner & Karyawan) ---
 const getStoreId = async (userId) => {
+  // 1. Cek apakah user adalah OWNER (ada di tabel stores)
   const [stores] = await db.query(
     "SELECT store_id FROM stores WHERE user_id = ?",
     [userId]
   );
-  return stores.length > 0 ? stores[0].store_id : null;
+  if (stores.length > 0) return stores[0].store_id;
+
+  // 2. Jika bukan owner, cek apakah user adalah KARYAWAN (ada di tabel users)
+  const [users] = await db.query(
+    "SELECT store_id FROM users WHERE user_id = ?",
+    [userId]
+  );
+  if (users.length > 0) return users[0].store_id;
+
+  return null;
 };
 
-// 1. GET - Ambil Daftar Karyawan
+// 1. GET - Ambil Daftar Karyawan (Updated Logic)
 exports.getEmployees = async (req, res) => {
   try {
     const storeId = await getStoreId(req.user.user_id);
-    // Ambil user yang store_id nya sama, tapi BUKAN owner
-    const [employees] = await db.query(
-      `SELECT user_id, username, email, phone_number, role, status 
-             FROM users 
-             WHERE store_id = ? AND role != 'owner'`,
-      [storeId]
-    );
+    if (!storeId)
+      return res.status(400).json({ message: "Toko tidak ditemukan." });
+
+    // Ambil query param type ('all' atau undefined)
+    const { type } = req.query;
+
+    let query;
+    let params;
+
+    if (type === "all") {
+      // KASUS: Jurnal & Histori (Butuh SEMUA user termasuk Owner)
+      // Query ini mengambil user yang punya store_id tersebut ATAU user yang merupakan pemilik toko tersebut
+      query = `
+        SELECT user_id, username, email, phone_number, role, status 
+        FROM users 
+        WHERE store_id = ? 
+        OR user_id = (SELECT user_id FROM stores WHERE store_id = ?)
+        ORDER BY FIELD(role, 'owner', 'admin', 'kasir'), username ASC
+      `;
+      // Kita butuh storeId dua kali untuk parameter query di atas
+      params = [storeId, storeId];
+    } else {
+      // KASUS: Menu Karyawan (Hanya tampilkan bawahan, Owner disembunyikan)
+      query = `
+        SELECT user_id, username, email, phone_number, role, status 
+        FROM users 
+        WHERE store_id = ? AND role != 'owner'
+        ORDER BY username ASC
+      `;
+      params = [storeId];
+    }
+
+    const [employees] = await db.query(query, params);
     res.json(employees);
   } catch (error) {
-    console.error(error);
+    console.error("Error getEmployees:", error);
     res.status(500).json({ message: "Gagal mengambil data karyawan." });
   }
 };
@@ -35,7 +71,8 @@ exports.createEmployee = async (req, res) => {
   await connection.beginTransaction();
 
   try {
-    const ownerStoreId = await getStoreId(req.user.user_id); // Karyawan ikut storeID owner
+    const storeId = await getStoreId(req.user.user_id);
+    if (!storeId) throw new Error("ID Toko tidak ditemukan.");
 
     const {
       username,
@@ -47,6 +84,17 @@ exports.createEmployee = async (req, res) => {
       permissions, // Array of strings: ['produk', 'penjualan']
     } = req.body;
 
+    // Cek duplikasi email dalam satu toko (opsional, tapi disarankan)
+    const [existing] = await connection.query(
+      "SELECT user_id FROM users WHERE email = ? AND store_id = ?",
+      [email, storeId]
+    );
+    if (existing.length > 0) {
+      return res
+        .status(400)
+        .json({ message: "Email sudah digunakan di toko ini." });
+    }
+
     // Hash Password
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
@@ -54,7 +102,7 @@ exports.createEmployee = async (req, res) => {
     // 1. Insert ke tabel users
     const [userResult] = await connection.query(
       `INSERT INTO users (username, email, password_hash, phone_number, role, status, store_id) 
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         username,
         email,
@@ -62,35 +110,34 @@ exports.createEmployee = async (req, res) => {
         phone_number,
         role || "kasir",
         status || "aktif",
-        ownerStoreId,
+        storeId,
       ]
     );
     const newUserId = userResult.insertId;
 
     // 2. Insert Permissions (Fitur Aplikasi)
-    // Daftar semua fitur yang tersedia di aplikasi
-    const allFeatures = [
-      "produk",
-      "penjualan",
-      "histori_penjualan",
-      "rekap_penjualan",
-      "pengeluaran",
-      "jurnal",
-      "grafik",
-      "buat_barcode",
-    ];
+    if (permissions && permissions.length > 0) {
+      const allFeatures = [
+        "produk",
+        "penjualan",
+        "histori_penjualan",
+        "rekap_penjualan",
+        "pengeluaran",
+        "jurnal",
+        "grafik",
+        "buat_barcode",
+      ];
 
-    // Siapkan array untuk batch insert
-    const permissionValues = allFeatures.map((feature) => {
-      // Cek apakah fitur ini dipilih (ada di array permissions dari frontend)
-      const isEnabled = permissions.includes(feature);
-      return [newUserId, feature, isEnabled];
-    });
+      const permissionValues = allFeatures.map((feature) => {
+        const isEnabled = permissions.includes(feature);
+        return [newUserId, feature, isEnabled];
+      });
 
-    await connection.query(
-      "INSERT INTO user_permissions (user_id, feature_name, is_enabled) VALUES ?",
-      [permissionValues]
-    );
+      await connection.query(
+        "INSERT INTO user_permissions (user_id, feature_name, is_enabled) VALUES ?",
+        [permissionValues]
+      );
+    }
 
     await connection.commit();
     res.status(201).json({ message: "Karyawan berhasil ditambahkan." });
@@ -114,7 +161,7 @@ exports.getEmployeeById = async (req, res) => {
     // Ambil data user
     const [users] = await db.query(
       `SELECT user_id, username, email, phone_number, role, status 
-             FROM users WHERE user_id = ? AND store_id = ?`,
+       FROM users WHERE user_id = ? AND store_id = ?`,
       [userId, storeId]
     );
 
@@ -178,11 +225,12 @@ exports.updateEmployee = async (req, res) => {
     await connection.query(query, params);
 
     // 2. Update Permissions
-    // Cara paling bersih: Hapus semua permission lama, lalu insert yang baru
+    // Hapus permission lama
     await connection.query("DELETE FROM user_permissions WHERE user_id = ?", [
       userId,
     ]);
 
+    // Insert permission baru jika ada
     if (permissions && permissions.length > 0) {
       const allFeatures = [
         "produk",
@@ -216,5 +264,30 @@ exports.updateEmployee = async (req, res) => {
       .json({ message: "Gagal update karyawan.", error: error.message });
   } finally {
     connection.release();
+  }
+};
+
+// 5. DELETE - Hapus Karyawan
+exports.deleteEmployee = async (req, res) => {
+  try {
+    const storeId = await getStoreId(req.user.user_id);
+    const employeeId = req.params.id;
+
+    // Pastikan karyawan milik toko ini dan bukan owner
+    const [check] = await db.query(
+      "SELECT * FROM users WHERE user_id = ? AND store_id = ? AND role != 'owner'",
+      [employeeId, storeId]
+    );
+
+    if (check.length === 0)
+      return res
+        .status(404)
+        .json({ message: "Karyawan tidak ditemukan atau tidak bisa dihapus." });
+
+    await db.query("DELETE FROM users WHERE user_id = ?", [employeeId]);
+    res.json({ message: "Karyawan dihapus." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Gagal menghapus." });
   }
 };
