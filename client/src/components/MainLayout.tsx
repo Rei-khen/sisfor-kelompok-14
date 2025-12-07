@@ -2,15 +2,19 @@
 import React, { type ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-// --- IMPORT ICON DARI ASSETS ---
-// Pastikan nama file sama persis dengan di folder (besar/kecil hurufnya)
+// --- IMPORT SEMUA ICON DARI ASSETS ---
+import iconKasirku from "../assets/icon/kasirku.png";
 import iconDashboard from "../assets/icon/dashboard.png";
 import iconGudang from "../assets/icon/gudang.png";
 import iconKaryawan from "../assets/icon/karyawan.png";
 import iconRestok from "../assets/icon/restok.png";
 import iconKategori from "../assets/icon/kategori.png";
 import iconKeluar from "../assets/icon/keluar.png";
-import iconKasirku from "../assets/icon/kasirku.png"; // Logo bulat
+
+// Icon Khusus untuk Header (Navbar Atas)
+import iconJurnal from "../assets/icon/jurnal.png";
+import iconPembayaran from "../assets/icon/pembayaran.png";
+import iconPenjualan from "../assets/icon/penjualan.png";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -38,7 +42,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   const sidebarStyle: React.CSSProperties = {
     width: "260px",
-    backgroundColor: "#050542", // Warna biru gelap
+    backgroundColor: "#050542",
     color: "white",
     display: "flex",
     flexDirection: "column",
@@ -46,23 +50,25 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     boxShadow: "2px 0 5px rgba(0,0,0,0.1)",
   };
 
+  // --- BAGIAN LOGO DIPERBESAR ---
   const logoAreaStyle: React.CSSProperties = {
-    height: "140px",
+    height: "160px", // Diperbesar dari 120px agar muat
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
     borderBottom: "1px solid rgba(255,255,255,0.1)",
     marginBottom: "10px",
+    flexShrink: 0,
   };
 
   const logoImgStyle: React.CSSProperties = {
-    width: "70px",
-    height: "70px",
+    width: "100px", // Diperbesar dari 60px
+    height: "100px", // Diperbesar dari 60px
     objectFit: "contain",
     marginBottom: "10px",
-    // Tidak perlu filter karena ini logo utama
   };
+  // -----------------------------
 
   const sidebarMenuStyle: React.CSSProperties = {
     listStyle: "none",
@@ -71,47 +77,35 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     flexGrow: 1,
     display: "flex",
     flexDirection: "column",
-    gap: "8px",
+    gap: "5px",
   };
 
-  // Fungsi Style untuk Container Tombol Menu
+  // Style Logika Aktif Sidebar
   const getSidebarItemStyle = (path: string): React.CSSProperties => {
-    // Cek apakah menu ini sedang aktif
     const isActive = location.pathname.startsWith(path);
-
     return {
-      padding: "12px 20px",
+      padding: "10px 20px",
       cursor: "pointer",
       display: "flex",
       alignItems: "center",
-      fontSize: "16px",
+      fontSize: "15px",
       fontWeight: isActive ? "bold" : "500",
       transition: "all 0.3s",
-
-      // Jika aktif: Background Putih, Teks Biru Gelap
-      // Jika tidak: Background Transparan, Teks Putih agak transparan
       backgroundColor: isActive ? "white" : "transparent",
       color: isActive ? "#050542" : "rgba(255,255,255,0.8)",
-
       borderRadius: "8px",
       textDecoration: "none",
     };
   };
 
-  // Fungsi Style Khusus Icon (SOLUSI MASALAH WARNA PUTIH)
-  const getIconStyle = (path: string): React.CSSProperties => {
+  const getSidebarIconStyle = (path: string): React.CSSProperties => {
     const isActive = location.pathname.startsWith(path);
-
     return {
-      width: "24px",
-      height: "24px",
+      width: "22px",
+      height: "22px",
       marginRight: "15px",
       objectFit: "contain",
-
-      // LOGIKA FILTER:
-      // Jika Aktif (Background Putih) -> Invert warna icon (Putih jadi Hitam)
-      // Jika Tidak Aktif -> Biarkan Putih
-      filter: isActive ? "invert(1) brightness(0.2)" : "none",
+      filter: isActive ? "invert(1) brightness(0)" : "none", // Invert jadi hitam jika aktif
       transition: "filter 0.3s",
     };
   };
@@ -123,6 +117,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     overflow: "hidden",
   };
 
+  // --- STYLE HEADER (NAVBAR ATAS) ---
   const headerStyle: React.CSSProperties = {
     height: "60px",
     backgroundColor: "#00acc1",
@@ -130,15 +125,18 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     justifyContent: "flex-end",
     alignItems: "center",
     padding: "0 30px",
+    gap: "25px",
     color: "white",
     flexShrink: 0,
     boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
   };
 
-  const headerIconStyle: React.CSSProperties = {
-    marginLeft: "20px",
-    fontSize: "20px",
+  const headerIconImgStyle: React.CSSProperties = {
+    width: "28px",
+    height: "28px",
     cursor: "pointer",
+    objectFit: "contain",
+    transition: "transform 0.2s",
   };
 
   const contentScrollableStyle: React.CSSProperties = {
@@ -149,16 +147,15 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   return (
     <div style={layoutStyle}>
-      {/* === LEFT SIDEBAR === */}
+      {/* === SIDEBAR KIRI === */}
       <aside style={sidebarStyle}>
-        {/* LOGO AREA */}
         <div style={logoAreaStyle}>
           <img src={iconKasirku} alt="Logo" style={logoImgStyle} />
           <h3
             style={{
               margin: 0,
               letterSpacing: "1px",
-              fontSize: "20px",
+              fontSize: "18px",
               fontWeight: "bold",
             }}
           >
@@ -166,7 +163,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           </h3>
         </div>
 
-        {/* MENU ITEMS */}
         <ul style={sidebarMenuStyle}>
           <li
             style={getSidebarItemStyle("/dashboard")}
@@ -175,7 +171,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             <img
               src={iconDashboard}
               alt="Dashboard"
-              style={getIconStyle("/dashboard")} // Pakai fungsi getIconStyle
+              style={getSidebarIconStyle("/dashboard")}
             />
             Dashboard
           </li>
@@ -187,7 +183,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             <img
               src={iconGudang}
               alt="Gudang"
-              style={getIconStyle("/feature/gudang")}
+              style={getSidebarIconStyle("/feature/gudang")}
             />
             Gudang
           </li>
@@ -199,7 +195,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             <img
               src={iconKaryawan}
               alt="Karyawan"
-              style={getIconStyle("/karyawan")}
+              style={getSidebarIconStyle("/karyawan")}
             />
             Karyawan
           </li>
@@ -211,7 +207,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             <img
               src={iconRestok}
               alt="Restok"
-              style={getIconStyle("/restok")}
+              style={getSidebarIconStyle("/restok")}
             />
             Restok
           </li>
@@ -223,47 +219,36 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             <img
               src={iconKategori}
               alt="Kategori"
-              style={getIconStyle("/kategori")}
+              style={getSidebarIconStyle("/kategori")}
             />
             Kategori
           </li>
         </ul>
 
-        {/* LOGOUT BUTTON */}
-        <div style={{ padding: "0 15px 20px 15px", marginTop: "auto" }}>
+        <div style={{ padding: "10px 15px 20px 15px", marginTop: "auto" }}>
           <div
             style={{
-              padding: "12px 20px",
+              padding: "10px 20px",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
-              fontSize: "16px",
+              fontSize: "15px",
               fontWeight: "500",
-              color: "#ff8a80", // Merah muda untuk teks
+              color: "#ff8a80",
               backgroundColor: "rgba(255, 255, 255, 0.1)",
               borderRadius: "8px",
               transition: "0.3s",
             }}
             onClick={handleLogout}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor =
-                "rgba(255, 255, 255, 0.2)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor =
-                "rgba(255, 255, 255, 0.1)")
-            }
           >
             <img
               src={iconKeluar}
               alt="Keluar"
               style={{
-                width: "24px",
-                height: "24px",
+                width: "22px",
+                height: "22px",
                 marginRight: "15px",
                 objectFit: "contain",
-                // Tombol keluar tidak pernah aktif (putih), jadi tidak perlu invert
-                // Tapi karena gambarnya putih, kita biarkan saja.
               }}
             />
             Keluar
@@ -271,25 +256,60 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         </div>
       </aside>
 
-      {/* === MAIN CONTENT AREA === */}
+      {/* === HEADER (NAVBAR ATAS) & KONTEN === */}
       <div style={mainContentAreaStyle}>
         <header style={headerStyle}>
-          <span
-            style={headerIconStyle}
-            onClick={() => navigate("/dashboard")}
+          {/* 1. Icon Dashboard */}
+          <img
+            src={iconDashboard}
+            alt="Dashboard"
             title="Dashboard"
-          >
-            🏠
-          </span>
-          <span style={headerIconStyle} title="Jadwal">
-            📅
-          </span>
-          <span style={headerIconStyle} title="Transaksi">
-            🛒
-          </span>
-          <span style={headerIconStyle} title="Toko">
-            🏪
-          </span>
+            style={headerIconImgStyle}
+            onClick={() => navigate("/dashboard")}
+            onMouseOver={(e) =>
+              (e.currentTarget.style.transform = "scale(1.2)")
+            }
+            onMouseOut={(e) => (e.currentTarget.style.transform = "scale(1)")}
+          />
+
+          {/* 2. Icon Jurnal */}
+          <img
+            src={iconJurnal}
+            alt="Jurnal"
+            title="Jurnal"
+            style={headerIconImgStyle}
+            onClick={() => navigate("/feature/jurnal")}
+            onMouseOver={(e) =>
+              (e.currentTarget.style.transform = "scale(1.2)")
+            }
+            onMouseOut={(e) => (e.currentTarget.style.transform = "scale(1)")}
+          />
+
+          {/* 3. Icon Pembayaran (Keranjang) */}
+          <img
+            src={iconPembayaran}
+            alt="Pembayaran"
+            title="Pembayaran"
+            style={headerIconImgStyle}
+            onClick={() => navigate("/feature/pembayaran")}
+            onMouseOver={(e) =>
+              (e.currentTarget.style.transform = "scale(1.2)")
+            }
+            onMouseOut={(e) => (e.currentTarget.style.transform = "scale(1)")}
+          />
+
+          {/* 4. Icon Penjualan (Toko) */}
+          <img
+            src={iconPenjualan}
+            alt="Penjualan"
+            title="Penjualan"
+            style={headerIconImgStyle}
+            onClick={() => navigate("/penjualan")}
+            onMouseOver={(e) =>
+              (e.currentTarget.style.transform = "scale(1.2)")
+            }
+            onMouseOut={(e) => (e.currentTarget.style.transform = "scale(1)")}
+          />
         </header>
 
         <main style={contentScrollableStyle}>{children}</main>
