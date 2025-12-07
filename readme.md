@@ -1,4 +1,4 @@
-Kasirku - Aplikasi Point of Sales (POS)
+## Kasirku - Aplikasi Point of Sales (POS)
 
 **Kasirku** adalah aplikasi kasir berbasis web yang dirancang untuk membantu UMKM mengelola penjualan, stok produk, dan laporan keuangan dengan mudah.
 
@@ -13,7 +13,7 @@ Tech Stack
 
 ---
 
-Prasyarat (Requirements)
+## Prasyarat (Requirements)
 
 Sebelum memulai, pastikan di komputermu sudah terinstall:
 
@@ -231,7 +231,7 @@ CREATE TABLE user_permissions (
 
 ---
 
-Panduan Singkat
+## Panduan Singkat
 
 1.  **Registrasi:** Saat pertama kali buka, masuk ke menu **Register**. Gunakan **Email** dan Password.
 2.  **Setup Toko:** Setelah login, kamu akan diminta mengisi Nama Toko dan Alamat.
