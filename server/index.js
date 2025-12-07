@@ -24,6 +24,7 @@ const transactionRoutes = require("./routes/transactionRoutes");
 const employeeRoutes = require("./routes/employeeRoutes");
 const restockRoutes = require("./routes/restockRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
+const journalRoutes = require("./routes/journalRoutes");
 
 // Route Test Sederhana
 app.get("/", (req, res) => {
@@ -39,6 +40,7 @@ app.use("/api/transactions", transactionRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/restock", restockRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/journal", journalRoutes);
 
 // Jalankan Server
 app.listen(port, () => {
