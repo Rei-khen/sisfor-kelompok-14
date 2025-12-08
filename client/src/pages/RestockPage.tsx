@@ -4,14 +4,14 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "../components/MainLayout";
 
-// Tipe Data
+// Tipe Data (Updated: Tambah image_url)
 interface Product {
   product_id: number;
   product_name: string;
   category_name: string | null;
   current_stock: number;
   stock_management_type: string;
-  // Kita tidak butuh harga jual di sini, tapi butuh ID dan Nama
+  image_url: string | null; // <-- Tambahan ini penting
 }
 
 interface Category {
@@ -44,7 +44,7 @@ const RestockPage: React.FC = () => {
       const token = localStorage.getItem("token");
       const headers = { Authorization: `Bearer ${token}` };
 
-      // Kita bisa pakai API products yang sudah ada karena datanya sama
+      // Kita pakai API products yang sama, yang sudah ada image_url nya
       const resProd = await axios.get("http://localhost:5000/api/products", {
         headers,
       });
@@ -111,7 +111,7 @@ const RestockPage: React.FC = () => {
     }
   };
 
-  // --- STYLES (Mirip ProductList tapi disederhanakan) ---
+  // --- STYLES ---
   const primaryColor = "#00acc1";
   const containerStyle: React.CSSProperties = {
     padding: "20px",
@@ -159,7 +159,7 @@ const RestockPage: React.FC = () => {
   return (
     <MainLayout>
       <div style={containerStyle}>
-        {/* HEADER & SEARCH (Sama seperti Produk) */}
+        {/* HEADER & SEARCH */}
         <div
           style={{
             display: "flex",
@@ -232,6 +232,7 @@ const RestockPage: React.FC = () => {
                 <div
                   style={{ display: "flex", gap: "15px", marginBottom: "15px" }}
                 >
+                  {/* --- BAGIAN GAMBAR (DIPERBAIKI) --- */}
                   <div
                     style={{
                       width: "80px",
@@ -241,10 +242,24 @@ const RestockPage: React.FC = () => {
                       justifyContent: "center",
                       alignItems: "center",
                       borderRadius: "6px",
+                      overflow: "hidden",
                     }}
                   >
-                    <span style={{ fontSize: "30px" }}>📦</span>
+                    {prod.image_url ? (
+                      <img
+                        src={`http://localhost:5000${prod.image_url}`}
+                        alt={prod.product_name}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    ) : (
+                      <span style={{ fontSize: "30px" }}>📦</span>
+                    )}
                   </div>
+
                   <div>
                     <small style={{ color: "#666" }}>
                       {prod.category_name || "Umum"}
