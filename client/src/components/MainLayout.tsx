@@ -176,7 +176,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             Dashboard
           </li>
 
-          <li
+          {/* <li
             style={getSidebarItemStyle("/feature/gudang")}
             onClick={() => navigate("/feature/gudang")}
           >
@@ -186,7 +186,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               style={getSidebarIconStyle("/feature/gudang")}
             />
             Gudang
-          </li>
+          </li> */}
 
           <li
             style={getSidebarItemStyle("/karyawan")}
