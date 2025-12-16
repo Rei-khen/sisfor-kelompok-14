@@ -3,26 +3,29 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "../components/MainLayout";
-import { useCart } from "../context/CartContext"; // Import Cart
+import { useCart } from "../context/CartContext";
 
-// client/src/pages/SalesCatalog.tsx
-
-// Cari bagian ini di paling atas, lalu ubah menjadi:
+// Interface Data
 interface Product {
   product_id: number;
   product_name: string;
   selling_price: number;
   current_stock: number;
   stock_management_type: string;
-  category_name: string | null; // <--- TAMBAHKAN BARIS INI
+  category_name: string | null;
+  image_url: string | null;
 }
 
-// Komponen Kartu Produk (Updated Image Logic)
+interface Category {
+  category_id: number;
+  category_name: string;
+}
+
+// --- KOMPONEN KARTU PRODUK ---
 const SalesProductCard: React.FC<{ product: Product }> = ({ product }) => {
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
 
-  // Cek stok
   const isOutOfStock =
     product.stock_management_type === "stock_based" &&
     product.current_stock <= 0;
@@ -33,7 +36,7 @@ const SalesProductCard: React.FC<{ product: Product }> = ({ product }) => {
       product.stock_management_type === "stock_based" &&
       quantity > product.current_stock
     ) {
-      alert(`Stok tidak cukup! Hanya tersisa ${product.current_stock}`);
+      alert(`Stok tidak cukup! Tersisa ${product.current_stock}`);
       return;
     }
     addToCart(product, quantity);
@@ -61,7 +64,7 @@ const SalesProductCard: React.FC<{ product: Product }> = ({ product }) => {
       }}
     >
       <div style={{ display: "flex", gap: "15px" }}>
-        {/* --- BAGIAN GAMBAR PRODUK (PERBAIKAN) --- */}
+        {/* Gambar Produk */}
         <div
           style={{
             width: "80px",
@@ -72,14 +75,12 @@ const SalesProductCard: React.FC<{ product: Product }> = ({ product }) => {
             alignItems: "center",
             borderRadius: "6px",
             flexShrink: 0,
-            overflow: "hidden", // Agar gambar tidak keluar border
+            overflow: "hidden",
           }}
         >
-          {/* Cek apakah ada image_url di database */}
-          {/* Gunakan cast 'any' sementara jika Typescript protes, atau update interface Product */}
-          {(product as any).image_url ? (
+          {product.image_url ? (
             <img
-              src={`http://localhost:5000${(product as any).image_url}`}
+              src={`http://localhost:5000${product.image_url}`}
               alt={product.product_name}
               style={{ width: "100%", height: "100%", objectFit: "cover" }}
             />
@@ -105,14 +106,13 @@ const SalesProductCard: React.FC<{ product: Product }> = ({ product }) => {
           <div style={{ fontSize: "15px", color: "#333", fontWeight: "bold" }}>
             Rp {product.selling_price.toLocaleString("id-ID")}
           </div>
-
           <small
             style={{
               color: stockColor,
               fontWeight: isOutOfStock ? "bold" : "normal",
             }}
           >
-            {isOutOfStock ? "Stok Habis" : stockText}
+            {stockText}
           </small>
         </div>
       </div>
@@ -178,12 +178,12 @@ const SalesProductCard: React.FC<{ product: Product }> = ({ product }) => {
           </button>
         </div>
 
-        {/* Tombol Add to Cart */}
+        {/* Tombol Keranjang */}
         <button
           onClick={handleAddToCart}
           disabled={isOutOfStock}
           style={{
-            backgroundColor: isOutOfStock ? "#ccc" : "#28a745", // Warna hijau keranjang
+            backgroundColor: isOutOfStock ? "#ccc" : "#28a745",
             color: "white",
             border: "none",
             borderRadius: "4px",
@@ -202,28 +202,55 @@ const SalesProductCard: React.FC<{ product: Product }> = ({ product }) => {
   );
 };
 
-// Halaman Utama Katalog
+// --- HALAMAN UTAMA KATALOG ---
 const SalesCatalog: React.FC = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // State Search & Filter
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+
+  // 1. Fetch Data Produk & Kategori
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await axios.get("http://localhost:5000/api/products", {
-          headers: { Authorization: `Bearer ${token}` },
+        const headers = { Authorization: `Bearer ${token}` };
+
+        // Ambil Produk
+        const resProd = await axios.get("http://localhost:5000/api/products", {
+          headers,
         });
-        setProducts(response.data);
+        setProducts(resProd.data);
+
+        // Ambil Kategori
+        const resCat = await axios.get("http://localhost:5000/api/categories", {
+          headers,
+        });
+        setCategories(resCat.data);
       } catch (error) {
-        console.error("Gagal ambil produk", error);
+        console.error("Gagal ambil data", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchProducts();
+    fetchData();
   }, []);
+
+  // 2. Logika Filtering
+  const filteredProducts = products.filter((product) => {
+    const matchesSearch = product.product_name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory
+      ? product.category_name === selectedCategory
+      : true;
+
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <MainLayout>
@@ -239,7 +266,7 @@ const SalesCatalog: React.FC = () => {
         >
           <h2 style={{ margin: 0, color: "#333" }}>PENJUALAN</h2>
           <button
-            onClick={() => navigate("/pembayaran")} // Arahkan ke halaman Pembayaran
+            onClick={() => navigate("/pembayaran")}
             style={{
               padding: "10px 20px",
               backgroundColor: "#00acc1",
@@ -254,9 +281,14 @@ const SalesCatalog: React.FC = () => {
           </button>
         </div>
 
-        {/* Filter/Search Bar (Sesuai Gambar) */}
+        {/* Filter Bar */}
         <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+          {/* Tombol Refresh */}
           <button
+            onClick={() => {
+              setSearchTerm("");
+              setSelectedCategory("");
+            }}
             style={{
               width: "50px",
               height: "40px",
@@ -264,13 +296,19 @@ const SalesCatalog: React.FC = () => {
               background: "#f0f0f0",
               borderRadius: "4px",
               fontSize: "20px",
+              cursor: "pointer",
             }}
+            title="Reset Filter"
           >
             🔄
           </button>
+
+          {/* Input Search */}
           <input
             type="text"
             placeholder="Cari produk"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             style={{
               flexGrow: 1,
               padding: "10px",
@@ -278,7 +316,10 @@ const SalesCatalog: React.FC = () => {
               borderRadius: "4px",
             }}
           />
+
+          {/* Tombol Grafik (Placeholder) */}
           <button
+            onClick={() => navigate("/grafik")}
             style={{
               width: "50px",
               height: "40px",
@@ -287,12 +328,18 @@ const SalesCatalog: React.FC = () => {
               color: "white",
               borderRadius: "4px",
               fontSize: "20px",
+              cursor: "pointer",
             }}
+            title="Lihat Grafik"
           >
             📊
           </button>
         </div>
+
+        {/* Dropdown Kategori */}
         <select
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
           style={{
             width: "100%",
             padding: "10px",
@@ -302,6 +349,11 @@ const SalesCatalog: React.FC = () => {
           }}
         >
           <option value="">Semua Kategori</option>
+          {categories.map((cat) => (
+            <option key={cat.category_id} value={cat.category_name}>
+              {cat.category_name}
+            </option>
+          ))}
         </select>
 
         {/* Grid Produk */}
@@ -315,9 +367,21 @@ const SalesCatalog: React.FC = () => {
               gap: "15px",
             }}
           >
-            {products.map((prod) => (
-              <SalesProductCard key={prod.product_id} product={prod} />
-            ))}
+            {filteredProducts.length > 0 ? (
+              filteredProducts.map((prod) => (
+                <SalesProductCard key={prod.product_id} product={prod} />
+              ))
+            ) : (
+              <p
+                style={{
+                  color: "#777",
+                  gridColumn: "1 / -1",
+                  textAlign: "center",
+                }}
+              >
+                Tidak ada produk yang cocok.
+              </p>
+            )}
           </div>
         )}
       </div>
