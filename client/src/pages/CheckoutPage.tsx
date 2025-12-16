@@ -1,7 +1,7 @@
 // client/src/pages/CheckoutPage.tsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCart, type CartItem } from "../context/CartContext";
+import { useCart } from "../context/CartContext";
 import MainLayout from "../components/MainLayout";
 import PaymentSuccessPopup from "../components/PaymentSuccessPopup";
 import axios from "axios";
@@ -58,7 +58,7 @@ const CheckoutPage: React.FC = () => {
     }
 
     if (paymentMethod === "non-tunai") {
-      navigate("/pilih-metode"); // Arahkan ke halaman pilih e-wallet
+      navigate("/pilih-metode"); // Arahkan ke halaman pilih e-wallet (pastikan route ini ada)
     } else {
       // Jika tunai, langsung simpan & tampilkan popup
       saveTransaction("Tunai");
@@ -237,16 +237,36 @@ const CheckoutPage: React.FC = () => {
                   marginBottom: "10px",
                 }}
               >
+                {/* --- UPDATE: TAMPILKAN GAMBAR --- */}
                 <div
                   style={{
                     width: "60px",
                     height: "60px",
                     backgroundColor: "#f0f0f0",
                     borderRadius: "4px",
+                    overflow: "hidden", // Agar gambar tidak keluar
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    flexShrink: 0,
                   }}
                 >
-                  🖼️
+                  {(item as any).image_url ? ( // Cast ke any jika type CartItem belum diupdate
+                    <img
+                      src={`http://localhost:5000${(item as any).image_url}`}
+                      alt={item.product_name}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
+                  ) : (
+                    <span>🖼️</span>
+                  )}
                 </div>
+                {/* -------------------------------- */}
+
                 <div style={{ flexGrow: 1 }}>
                   <strong>{item.product_name}</strong>
                   <div style={{ fontSize: "14px" }}>
