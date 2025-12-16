@@ -17,20 +17,18 @@ interface Product {
   category_name: string | null; // <--- TAMBAHKAN BARIS INI
 }
 
-// Komponen Kartu Produk terpisah
+// Komponen Kartu Produk (Updated Image Logic)
 const SalesProductCard: React.FC<{ product: Product }> = ({ product }) => {
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
 
-  // Cek apakah stok habis (Hanya jika tipe manajemennya 'stock_based')
+  // Cek stok
   const isOutOfStock =
     product.stock_management_type === "stock_based" &&
     product.current_stock <= 0;
 
   const handleAddToCart = () => {
-    if (isOutOfStock) return; // Cegah fungsi jika stok habis
-
-    // Cek juga apakah quantity yang mau dimasukkan melebihi stok yang ada
+    if (isOutOfStock) return;
     if (
       product.stock_management_type === "stock_based" &&
       quantity > product.current_stock
@@ -38,12 +36,10 @@ const SalesProductCard: React.FC<{ product: Product }> = ({ product }) => {
       alert(`Stok tidak cukup! Hanya tersisa ${product.current_stock}`);
       return;
     }
-
     addToCart(product, quantity);
     setQuantity(1);
   };
 
-  // Warna teks stok
   const stockColor = isOutOfStock ? "red" : "#777";
   const stockText =
     product.stock_management_type === "no_stock_management"
@@ -61,9 +57,11 @@ const SalesProductCard: React.FC<{ product: Product }> = ({ product }) => {
         flexDirection: "column",
         justifyContent: "space-between",
         opacity: isOutOfStock ? 0.7 : 1,
+        boxShadow: "0 2px 5px rgba(0,0,0,0.05)",
       }}
     >
       <div style={{ display: "flex", gap: "15px" }}>
+        {/* --- BAGIAN GAMBAR PRODUK (PERBAIKAN) --- */}
         <div
           style={{
             width: "80px",
@@ -72,12 +70,24 @@ const SalesProductCard: React.FC<{ product: Product }> = ({ product }) => {
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            borderRadius: "4px",
+            borderRadius: "6px",
             flexShrink: 0,
+            overflow: "hidden", // Agar gambar tidak keluar border
           }}
         >
-          🖼️
+          {/* Cek apakah ada image_url di database */}
+          {/* Gunakan cast 'any' sementara jika Typescript protes, atau update interface Product */}
+          {(product as any).image_url ? (
+            <img
+              src={`http://localhost:5000${(product as any).image_url}`}
+              alt={product.product_name}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          ) : (
+            <span style={{ fontSize: "30px" }}>📦</span>
+          )}
         </div>
+
         <div>
           <strong style={{ color: "#0056b3", fontSize: "12px" }}>
             {product.category_name || "Umum"}
@@ -115,7 +125,7 @@ const SalesProductCard: React.FC<{ product: Product }> = ({ product }) => {
           marginTop: "15px",
         }}
       >
-        {/* Stepper Kuantitas (Disable jika stok habis) */}
+        {/* Stepper Quantity */}
         <div
           style={{
             display: "flex",
@@ -168,12 +178,12 @@ const SalesProductCard: React.FC<{ product: Product }> = ({ product }) => {
           </button>
         </div>
 
-        {/* Tombol Add to Cart (Disable & Warna Abu jika stok habis) */}
+        {/* Tombol Add to Cart */}
         <button
           onClick={handleAddToCart}
           disabled={isOutOfStock}
           style={{
-            backgroundColor: isOutOfStock ? "#ccc" : "#28a745",
+            backgroundColor: isOutOfStock ? "#ccc" : "#28a745", // Warna hijau keranjang
             color: "white",
             border: "none",
             borderRadius: "4px",
