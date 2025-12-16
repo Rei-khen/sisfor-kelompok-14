@@ -262,7 +262,7 @@ const EmployeeForm: React.FC = () => {
               style={inputStyle}
             />
 
-            <label style={labelStyle}>email (untuk login)</label>
+            <label style={labelStyle}>email</label>
             <input
               type="email"
               name="email"

@@ -41,17 +41,79 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    // UBAH DISINI: Login pakai email
-    const { email, password } = req.body;
+    const { email, username, password, store_name, login_type } = req.body;
 
+    // --- SKENARIO 1: LOGIN KARYAWAN (Via store_name + username) ---
+    if (login_type === "employee" && store_name && username) {
+      // 1. Cari Toko dulu
+      const [stores] = await db.query(
+        "SELECT store_id FROM stores WHERE store_name = ?",
+        [store_name]
+      );
+      if (stores.length === 0) {
+        return res.status(404).json({ message: "Toko tidak ditemukan." });
+      }
+      const storeId = stores[0].store_id;
+
+      // 2. Cari Karyawan di Toko tersebut
+      const [users] = await db.query(
+        "SELECT * FROM users WHERE username = ? AND store_id = ?",
+        [username, storeId]
+      );
+
+      if (users.length === 0) {
+        return res
+          .status(401)
+          .json({ message: "Username karyawan tidak ditemukan di toko ini." });
+      }
+
+      const user = users[0];
+
+      // Cek Password
+      const isMatch = await bcrypt.compare(password, user.password_hash);
+      if (!isMatch) return res.status(401).json({ message: "Password salah." });
+
+      // Buat Token
+      const token = jwt.sign(
+        { user_id: user.user_id, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: "1d" }
+      );
+
+      // Ambil Permissions (Opsional, untuk frontend)
+      const [permissions] = await db.query(
+        "SELECT feature_name FROM user_permissions WHERE user_id = ? AND is_enabled = 1",
+        [user.user_id]
+      );
+      const permissionList = permissions.map((p) => p.feature_name);
+
+      return res.json({
+        message: "Login Karyawan Berhasil",
+        token,
+        user: {
+          user_id: user.user_id,
+          username: user.username,
+          role: user.role,
+          permissions: permissionList,
+        },
+      });
+    }
+
+    // --- SKENARIO 2: LOGIN OWNER (Via Email - Kode Lama) ---
+    // (Tetap pertahankan kode lama kamu di sini untuk owner)
+    // ... (Cari user by email, cek password, return token) ...
+    // Jika kamu pakai kode lama, pastikan logika di atas ditaruh SEBELUM logika owner.
+
+    // Contoh implementasi Owner (Simplified):
     const [users] = await db.query("SELECT * FROM users WHERE email = ?", [
       email,
     ]);
-    const user = users[0];
+    if (users.length === 0)
+      return res.status(401).json({ message: "Email tidak terdaftar." });
 
-    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
-      return res.status(401).json({ message: "Email atau password salah." });
-    }
+    const user = users[0];
+    const isMatch = await bcrypt.compare(password, user.password_hash);
+    if (!isMatch) return res.status(401).json({ message: "Password salah." });
 
     const token = jwt.sign(
       { user_id: user.user_id, role: user.role },
@@ -60,12 +122,12 @@ exports.login = async (req, res) => {
     );
 
     res.json({
-      message: "Login berhasil!",
+      message: "Login Owner Berhasil",
       token,
       user: {
-        id: user.user_id,
-        email: user.email,
+        user_id: user.user_id,
         username: user.username,
+        email: user.email,
         role: user.role,
       },
     });

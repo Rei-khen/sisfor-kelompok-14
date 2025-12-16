@@ -1,17 +1,14 @@
 // client/src/components/MainLayout.tsx
-import React, { type ReactNode } from "react";
+import React, { type ReactNode, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-// --- IMPORT SEMUA ICON DARI ASSETS ---
 import iconKasirku from "../assets/icon/kasirku.png";
 import iconDashboard from "../assets/icon/dashboard.png";
-import iconGudang from "../assets/icon/gudang.png";
 import iconKaryawan from "../assets/icon/karyawan.png";
 import iconRestok from "../assets/icon/restok.png";
 import iconKategori from "../assets/icon/kategori.png";
 import iconKeluar from "../assets/icon/keluar.png";
 
-// Icon Khusus untuk Header (Navbar Atas)
 import iconJurnal from "../assets/icon/jurnal.png";
 import iconPembayaran from "../assets/icon/pembayaran.png";
 import iconPenjualan from "../assets/icon/penjualan.png";
@@ -24,13 +21,25 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [isOwner, setIsOwner] = useState(false);
+
+  useEffect(() => {
+    const userString = localStorage.getItem("user");
+    if (userString) {
+      const user = JSON.parse(userString);
+      if (user.role === "owner") {
+        setIsOwner(true);
+      }
+    }
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("permissions");
     navigate("/login");
   };
 
-  // --- STYLES ---
   const layoutStyle: React.CSSProperties = {
     display: "flex",
     height: "100vh",
@@ -50,9 +59,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     boxShadow: "2px 0 5px rgba(0,0,0,0.1)",
   };
 
-  // --- BAGIAN LOGO DIPERBESAR ---
   const logoAreaStyle: React.CSSProperties = {
-    height: "160px", // Diperbesar dari 120px agar muat
+    height: "160px",
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
@@ -63,12 +71,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   };
 
   const logoImgStyle: React.CSSProperties = {
-    width: "100px", // Diperbesar dari 60px
-    height: "100px", // Diperbesar dari 60px
+    width: "100px",
+    height: "100px",
     objectFit: "contain",
     marginBottom: "10px",
   };
-  // -----------------------------
 
   const sidebarMenuStyle: React.CSSProperties = {
     listStyle: "none",
@@ -80,7 +87,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     gap: "5px",
   };
 
-  // Style Logika Aktif Sidebar
   const getSidebarItemStyle = (path: string): React.CSSProperties => {
     const isActive = location.pathname.startsWith(path);
     return {
@@ -105,7 +111,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       height: "22px",
       marginRight: "15px",
       objectFit: "contain",
-      filter: isActive ? "invert(1) brightness(0)" : "none", // Invert jadi hitam jika aktif
+      filter: isActive ? "invert(1) brightness(0)" : "none",
       transition: "filter 0.3s",
     };
   };
@@ -117,7 +123,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     overflow: "hidden",
   };
 
-  // --- STYLE HEADER (NAVBAR ATAS) ---
   const headerStyle: React.CSSProperties = {
     height: "60px",
     backgroundColor: "#00acc1",
@@ -147,7 +152,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   return (
     <div style={layoutStyle}>
-      {/* === SIDEBAR KIRI === */}
       <aside style={sidebarStyle}>
         <div style={logoAreaStyle}>
           <img src={iconKasirku} alt="Logo" style={logoImgStyle} />
@@ -176,29 +180,19 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             Dashboard
           </li>
 
-          {/* <li
-            style={getSidebarItemStyle("/feature/gudang")}
-            onClick={() => navigate("/feature/gudang")}
-          >
-            <img
-              src={iconGudang}
-              alt="Gudang"
-              style={getSidebarIconStyle("/feature/gudang")}
-            />
-            Gudang
-          </li> */}
-
-          <li
-            style={getSidebarItemStyle("/karyawan")}
-            onClick={() => navigate("/karyawan")}
-          >
-            <img
-              src={iconKaryawan}
-              alt="Karyawan"
-              style={getSidebarIconStyle("/karyawan")}
-            />
-            Karyawan
-          </li>
+          {isOwner && (
+            <li
+              style={getSidebarItemStyle("/karyawan")}
+              onClick={() => navigate("/karyawan")}
+            >
+              <img
+                src={iconKaryawan}
+                alt="Karyawan"
+                style={getSidebarIconStyle("/karyawan")}
+              />
+              Karyawan
+            </li>
+          )}
 
           <li
             style={getSidebarItemStyle("/restok")}
@@ -256,10 +250,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         </div>
       </aside>
 
-      {/* === HEADER (NAVBAR ATAS) & KONTEN === */}
       <div style={mainContentAreaStyle}>
         <header style={headerStyle}>
-          {/* 1. Icon Dashboard */}
           <img
             src={iconDashboard}
             alt="Dashboard"
@@ -272,7 +264,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             onMouseOut={(e) => (e.currentTarget.style.transform = "scale(1)")}
           />
 
-          {/* 2. Icon Jurnal */}
           <img
             src={iconJurnal}
             alt="Jurnal"
@@ -285,7 +276,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             onMouseOut={(e) => (e.currentTarget.style.transform = "scale(1)")}
           />
 
-          {/* 3. Icon Pembayaran (Keranjang) */}
           <img
             src={iconPembayaran}
             alt="Pembayaran"
@@ -298,7 +288,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             onMouseOut={(e) => (e.currentTarget.style.transform = "scale(1)")}
           />
 
-          {/* 4. Icon Penjualan (Toko) */}
           <img
             src={iconPenjualan}
             alt="Penjualan"

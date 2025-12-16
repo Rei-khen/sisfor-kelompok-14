@@ -4,7 +4,8 @@ import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 
 const LoginKaryawan: React.FC = () => {
-  const [username, setUsername] = useState(""); // Karyawan biasanya pakai username
+  const [storeName, setStoreName] = useState(""); // Input baru
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,45 +17,55 @@ const LoginKaryawan: React.FC = () => {
     setLoading(true);
 
     try {
-      // Endpoint backend tetap sama, karena backend akan mengecek data di tabel users
+      // Kita pakai endpoint login khusus Karyawan (atau modifikasi endpoint umum)
+      // Disarankan backend juga diupdate untuk menerima storeName agar pencarian user lebih spesifik
       const response = await axios.post(
         "http://localhost:5000/api/auth/login",
         {
-          username, 
+          username,
           password,
+          store_name: storeName, // Kirim nama toko ke backend
+          login_type: "employee", // Flag untuk memberitahu backend ini login karyawan
         }
       );
 
-      // Cek Role di Frontend (Opsional, untuk memastikan yang login benar-benar karyawan)
+      // Cek Role di Frontend
       const userRole = response.data.user.role;
-      if (userRole === 'owner') {
-          setError("Akun Owner tidak boleh login di sini. Silakan ke Login Owner.");
-          setLoading(false);
-          return;
+      if (userRole === "owner") {
+        setError(
+          "Akun Owner tidak boleh login di sini. Silakan ke Login Owner."
+        );
+        setLoading(false);
+        return;
       }
 
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("user", JSON.stringify(response.data.user));
-      // Simpan permissions juga jika backend mengirimnya
+
+      // Simpan permissions jika ada
       if (response.data.user.permissions) {
-        localStorage.setItem("permissions", JSON.stringify(response.data.user.permissions));
+        localStorage.setItem(
+          "permissions",
+          JSON.stringify(response.data.user.permissions)
+        );
       }
 
-      // Karyawan biasanya langsung diarahkan ke Penjualan/Kasir
-      navigate("/penjualan"); 
-      
+      // Karyawan diarahkan ke Penjualan
+      navigate("/penjualan");
     } catch (err: any) {
+      console.error(err);
       setError(
-        err.response?.data?.message || "Login gagal. Cek username dan password."
+        err.response?.data?.message ||
+          "Login gagal. Periksa Nama Toko, Username, dan Password."
       );
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
   // --- STYLES ---
   const fontStyle = { fontFamily: "'Montserrat', sans-serif" };
-  const primaryColor = "#00acc1"; // Warna Biru Tosca Khas Karyawan/Kasir
+  const primaryColor = "#00acc1";
 
   const pageContainerStyle: React.CSSProperties = {
     minHeight: "100vh",
@@ -62,8 +73,8 @@ const LoginKaryawan: React.FC = () => {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f0f2f5", // Background abu soft
-    ...fontStyle
+    backgroundColor: "#f0f2f5",
+    ...fontStyle,
   };
 
   const cardStyle: React.CSSProperties = {
@@ -75,7 +86,7 @@ const LoginKaryawan: React.FC = () => {
     maxWidth: "400px",
     margin: "20px",
     textAlign: "center",
-    color: "#333"
+    color: "#333",
   };
 
   const inputStyle: React.CSSProperties = {
@@ -88,7 +99,7 @@ const LoginKaryawan: React.FC = () => {
     outline: "none",
     backgroundColor: "white",
     color: "#333",
-    ...fontStyle
+    ...fontStyle,
   };
 
   const buttonStyle: React.CSSProperties = {
@@ -102,32 +113,75 @@ const LoginKaryawan: React.FC = () => {
     fontWeight: "bold",
     cursor: "pointer",
     transition: "0.2s",
-    ...fontStyle
+    ...fontStyle,
   };
 
   return (
     <div style={pageContainerStyle}>
       <div style={cardStyle}>
-        
-        {/* Logo / Icon */}
         <div style={{ fontSize: "50px", marginBottom: "10px" }}>👋</div>
 
         <h2 style={{ color: "#050542", marginBottom: "5px", marginTop: 0 }}>
           Login Karyawan
         </h2>
-        <p style={{ color: "#666", marginBottom: "30px", marginTop: 0, fontSize: "14px" }}>
+        <p
+          style={{
+            color: "#666",
+            marginBottom: "30px",
+            marginTop: 0,
+            fontSize: "14px",
+          }}
+        >
           Masuk untuk memulai shift kerja Anda
         </p>
 
         {error && (
-          <div style={{ backgroundColor: "#ffebee", color: "#d32f2f", padding: "12px", borderRadius: "8px", marginBottom: "20px", fontSize: "13px" }}>
+          <div
+            style={{
+              backgroundColor: "#ffebee",
+              color: "#d32f2f",
+              padding: "12px",
+              borderRadius: "8px",
+              marginBottom: "20px",
+              fontSize: "13px",
+            }}
+          >
             {error}
           </div>
         )}
 
         <form onSubmit={handleLogin}>
-          <div style={{textAlign: "left"}}>
-            <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", fontSize:"13px" }}>
+          {/* Input Nama Toko */}
+          <div style={{ textAlign: "left" }}>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                fontWeight: "600",
+                fontSize: "13px",
+              }}
+            >
+              Nama Toko (Tempat Anda Bekerja)
+            </label>
+            <input
+              type="text"
+              value={storeName}
+              onChange={(e) => setStoreName(e.target.value)}
+              required
+              placeholder="Contoh: Toko Berkah"
+              style={inputStyle}
+            />
+          </div>
+
+          <div style={{ textAlign: "left" }}>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                fontWeight: "600",
+                fontSize: "13px",
+              }}
+            >
               Username
             </label>
             <input
@@ -139,9 +193,16 @@ const LoginKaryawan: React.FC = () => {
               style={inputStyle}
             />
           </div>
-          
-          <div style={{textAlign: "left"}}>
-            <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", fontSize:"13px" }}>
+
+          <div style={{ textAlign: "left" }}>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                fontWeight: "600",
+                fontSize: "13px",
+              }}
+            >
               Password
             </label>
             <input
@@ -154,20 +215,36 @@ const LoginKaryawan: React.FC = () => {
             />
           </div>
 
-          <button type="submit" disabled={loading} style={{...buttonStyle, opacity: loading ? 0.7 : 1}}>
+          <button
+            type="submit"
+            disabled={loading}
+            style={{ ...buttonStyle, opacity: loading ? 0.7 : 1 }}
+          >
             {loading ? "Memproses..." : "Masuk Kerja"}
           </button>
         </form>
 
-        <div style={{ marginTop: "25px", borderTop: "1px solid #eee", paddingTop: "20px" }}>
+        <div
+          style={{
+            marginTop: "25px",
+            borderTop: "1px solid #eee",
+            paddingTop: "20px",
+          }}
+        >
           <p style={{ fontSize: "13px", color: "#666", margin: 0 }}>
-            Anda Pemilik Toko? <br/>
-            <Link to="/login" style={{ color: "#050542", fontWeight: "bold", textDecoration: "none" }}>
+            Anda Pemilik Toko? <br />
+            <Link
+              to="/login"
+              style={{
+                color: "#050542",
+                fontWeight: "bold",
+                textDecoration: "none",
+              }}
+            >
               Login sebagai Owner di sini
             </Link>
           </p>
         </div>
-
       </div>
     </div>
   );

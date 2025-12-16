@@ -1,18 +1,36 @@
 // server/controllers/productController.js
 const db = require("../config/db");
 
-// Helper untuk mendapatkan store_id dan user_id dari token
 const getStoreAndUser = async (req) => {
   const userId = req.user.user_id;
+
+  // 1. Cek apakah user adalah OWNER? (Cari di tabel stores)
   const [stores] = await db.query(
     "SELECT store_id FROM stores WHERE user_id = ?",
     [userId]
   );
-  if (stores.length === 0) throw new Error("Toko tidak ditemukan.");
-  return { storeId: stores[0].store_id, userId };
+
+  if (stores.length > 0) {
+    return { storeId: stores[0].store_id, userId };
+  }
+
+  // 2. Jika bukan Owner, cek apakah user adalah KARYAWAN? (Cari di tabel users)
+  const [users] = await db.query(
+    "SELECT store_id FROM users WHERE user_id = ?",
+    [userId]
+  );
+
+  if (users.length > 0 && users[0].store_id) {
+    return { storeId: users[0].store_id, userId };
+  }
+
+  // 3. Jika tidak ketemu di keduanya
+  throw new Error("Toko tidak ditemukan. Pastikan akun memiliki akses toko.");
 };
+// -------------------------
 
 // 1. TAMBAH PRODUK BARU (POST)
+// (Kode di bawah ini SAMA PERSIS dengan kodemu, tidak ada fitur yang hilang)
 exports.createProduct = async (req, res) => {
   const connection = await db.getConnection();
   await connection.beginTransaction();

@@ -2,21 +2,54 @@
 const db = require("../config/db");
 
 // Cek apakah user sudah punya toko
+// GET - Ambil Data Toko Saya (Untuk Owner & Karyawan)
 exports.getMyStore = async (req, res) => {
   try {
-    const userId = req.user.user_id; // Didapat dari middleware autentikasi nanti
-    const [stores] = await db.query("SELECT * FROM stores WHERE user_id = ?", [
-      userId,
-    ]);
+    const userId = req.user.user_id;
+
+    // 1. Cek detail user dulu untuk tahu Role dan Store ID nya
+    const [users] = await db.query(
+      "SELECT role, store_id FROM users WHERE user_id = ?",
+      [userId]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "User tidak ditemukan." });
+    }
+
+    const user = users[0];
+    let storeQuery = "";
+    let queryParam = "";
+
+    // 2. Tentukan cara mencari toko berdasarkan Role
+    if (user.role === "owner") {
+      // Jika Owner: Cari toko yang user_id-nya adalah dia
+      storeQuery = "SELECT * FROM stores WHERE user_id = ?";
+      queryParam = userId;
+    } else {
+      // Jika Karyawan: Cari toko berdasarkan store_id yang ada di akun karyawannya
+      if (!user.store_id) {
+        return res
+          .status(404)
+          .json({
+            message: "Akun karyawan ini tidak terhubung ke toko manapun.",
+          });
+      }
+      storeQuery = "SELECT * FROM stores WHERE store_id = ?";
+      queryParam = user.store_id;
+    }
+
+    // 3. Eksekusi Query
+    const [stores] = await db.query(storeQuery, [queryParam]);
 
     if (stores.length === 0) {
-      return res.status(404).json({ message: "Toko belum dibuat." });
+      return res.status(404).json({ message: "Toko tidak ditemukan." });
     }
 
     res.json(stores[0]);
   } catch (error) {
-    console.error("Error ambil data toko:", error);
-    res.status(500).json({ message: "Terjadi kesalahan server." });
+    console.error("Error getMyStore:", error);
+    res.status(500).json({ message: "Gagal mengambil data toko." });
   }
 };
 
